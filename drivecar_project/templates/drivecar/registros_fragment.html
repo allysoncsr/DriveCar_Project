@@ -1,0 +1,22 @@
+<h3>Registros de manutenção — {{ veiculo }}</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Data</th><th>KM</th><th>Peça</th><th>Preço (R$)</th><th>Troca</th><th>Garantia (meses)</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in registros %}
+    <tr>
+      <td>{{ r.data }}</td>
+      <td>{{ r.km }}</td>
+      <td>{{ r.peca.nome }}</td>
+      <td>{{ r.preco }}</td>
+      <td>{{ r.troca|yesno:"Sim,Não" }}</td>
+      <td>{{ r.garantia_meses }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6">Nenhum registro.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>

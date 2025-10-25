@@ -1,0 +1,18 @@
+{% extends "drivecar/base.html" %}
+{% load humanize %}
+{% block title %}Meus Veículos{% endblock %}
+{% block content %}
+<h2>Meus veículos</h2>
+<div class="vehicle-grid">
+  {% for v in veiculos %}
+    <article class="vehicle-card">
+      <a class="vehicle-link" href="{% url 'drivecar:manutencao' v.id %}">
+        <div class="vehicle-title">{{ v.marca }} <span class="vehicle-model">{{ v.modelo }}</span></div>
+        <div class="vehicle-meta">{{ v.ano }} • {{ v.km_atual|intcomma }} km</div>
+      </a>
+    </article>
+  {% empty %}
+    <p>Nenhum veículo cadastrado.</p>
+  {% endfor %}
+</div>
+{% endblock %}

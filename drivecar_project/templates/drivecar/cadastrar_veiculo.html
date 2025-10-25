@@ -1,0 +1,63 @@
+{% extends "drivecar/base.html" %}
+{% block title %}Cadastrar Veículo{% endblock %}
+{% block content %}
+<h2>Cadastrar Veículo</h2>
+<div class="form-card">
+  <form method="post" class="veiculo-form">
+    {% csrf_token %}
+    <div class="form-row">
+      <label for="id_marca">Marca</label>
+      {{ form.marca|add_class:'input input-rounded' }}
+    </div>
+    <div class="form-row">
+      <label for="id_modelo">Modelo</label>
+      {{ form.modelo|add_class:'input input-rounded' }}
+    </div>
+    <div class="form-row form-inline">
+      <div class="col-left">
+        <label for="id_ano">Ano</label>
+        {{ form.ano|add_class:'input input-rounded' }}
+      </div>
+      <div class="col-right">
+        <label for="id_placa">Placa</label>
+        {{ form.placa|add_class:'input input-rounded' }}
+      </div>
+    </div>
+    <div class="form-row form-inline">
+      <div class="col-left">
+        <label for="id_km_atual">Quilometragem atual</label>
+        {{ form.km_atual|add_class:'input input-rounded' }}
+      </div>
+      <div class="col-right">
+        <label for="id_combustivel">Combustível</label>
+        {{ form.combustivel|add_class:'input input-rounded' }}
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">Cadastrar</button>
+    </div>
+  </form>
+</div>
+<script>
+  // Proteção: se HTMX estiver presente, removemos atributos que poderiam
+  // transformar esse form em uma submissão HTMX. Mantemos submissão tradicional.
+  (function(){
+    try{
+      if(window.htmx){
+        var form = document.querySelector('form[method="post"]');
+        if(form){
+          // remover atributos hx-* do próprio form e dos seus filhos
+          var els = form.querySelectorAll('[hx-post],[hx-get],[hx-boost],[data-hx-post],[data-hx-get]');
+          els.forEach(function(el){
+            Array.from(el.attributes).forEach(function(attr){
+              if(attr.name.indexOf('hx-') === 0 || attr.name.indexOf('data-hx-') === 0){
+                el.removeAttribute(attr.name);
+              }
+            });
+          });
+        }
+      }
+    }catch(e){/* não falhar por JS */}
+  })();
+</script>
+{% endblock %}

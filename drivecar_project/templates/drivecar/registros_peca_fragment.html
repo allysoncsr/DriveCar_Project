@@ -1,0 +1,81 @@
+{% load form_extras %}
+
+<div class="fragment-header">
+  <h4>Registros — {{ peca.nome }} ({{ veiculo }})</h4>
+  {% if saved %}
+    <div class="notice success">Registro salvo com sucesso</div>
+    <script>setTimeout(function(){var n=document.querySelector('.notice.success'); if(n) n.remove();}, 2500);</script>
+  {% endif %}
+</div>
+<table class="records-table">
+  <thead>
+    <tr>
+      <th>Data</th><th>KM</th><th>Preço</th><th>Troca</th><th>Garantia (meses)</th><th>Observações</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in registros %}
+      <tr>
+        <td>{{ r.data }}</td>
+        <td>{{ r.km }}</td>
+        <td>{{ r.preco }}</td>
+        <td>{{ r.troca|yesno:"Sim,Não" }}</td>
+        <td>{{ r.garantia_meses }}</td>
+        <td>{{ r.observacoes }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">Nenhum registro.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<form method="post" hx-post="{% url 'drivecar:registros_peca' veiculo.id peca.id %}" hx-target="#registros-{{ peca.id }}" class="registro-form">
+  {% csrf_token %}
+  <div class="form-grid">
+    <div class="col col-2">
+      <label class="field-label" for="id_data_{{ peca.id }}">Data</label>
+      {{ form.data|add_class:'input input-sm' }}
+    </div>
+    <div class="col col-2">
+      <label class="field-label" for="id_km_{{ peca.id }}">KM</label>
+      {{ form.km|add_class:'input input-sm' }}
+    </div>
+    <div class="col col-2">
+      <label class="field-label" for="id_preco_{{ peca.id }}">Preço</label>
+      {{ form.preco|add_class:'input input-sm' }}
+    </div>
+    <div class="col col-1">
+      <label class="field-label">Troca</label>
+      <div class="inline-center">{{ form.troca }} </div>
+    </div>
+    <div class="col col-1">
+      <label class="field-label" for="id_garantia_{{ peca.id }}">Garantia</label>
+      {{ form.garantia_meses|add_class:'input input-xs' }}
+    </div>
+    <div class="col col-6">
+      <label class="field-label" for="id_obs_{{ peca.id }}">Observações</label>
+      {{ form.observacoes|add_class:'textarea textarea-sm' }}
+    </div>
+    <div class="col col-12">
+      <button type="submit" class="btn-primary">[+] Adicionar registro</button>
+    </div>
+  </div>
+</form>
+
+<script>
+  // Depois de salvar (HTMX), colocar foco no primeiro campo e limpar inputs se necessário
+  (function(){
+    var form = document.querySelector('#registros-{{ peca.id }} form.registro-form');
+    if(form){
+      var first = form.querySelector('input[type="date"], input[type="number"], textarea');
+      if(first) first.focus();
+      // format preco on blur
+      var preco = form.querySelector('input[name$="preco"]');
+      if(preco){
+        preco.addEventListener('blur', function(){
+          try{ var v = parseFloat(preco.value || '0'); preco.value = v.toFixed(2); }catch(e){}
+        });
+      }
+    }
+  })();
+</script>
