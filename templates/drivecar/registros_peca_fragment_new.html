@@ -1,0 +1,274 @@
+{% load form_extras %}
+
+<div class="fragment-header">
+  <h4>Registros — {{ peca.nome }} ({{ veiculo }})</h4>
+  {% if saved %}
+    <div class="notice success">Registro salvo com sucesso</div>
+    <script>setTimeout(function(){var n=document.querySelector('.notice.success'); if(n) n.remove();}, 2500);</script>
+  {% endif %}
+</div>
+<table class="records-table">
+  <thead>
+    <tr>
+      <th>Data</th><th>KM</th><th>Preço</th><th>Troca</th><th>Garantia (meses)</th><th>Observações</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in registros %}
+      <tr id="registro-{{ r.id }}" class="registro-row" data-registro-id="{{ r.id }}">
+        <td>{{ r.data }}</td>
+        <td>{{ r.km }}</td>
+        <td>{{ r.preco }}</td>
+        <td>{{ r.troca|yesno:"Sim,Não" }}</td>
+        <td>{{ r.garantia_meses }}</td>
+        <td>{{ r.observacoes }}</td>
+        <td class="td-actions">
+          <form method="post" action="{% url 'drivecar:excluir_registro' veiculo.id peca.id r.id %}" style="display: inline;" onsubmit="return confirmarExclusao();">
+            {% csrf_token %}
+            <button type="submit" class="btn-delete-registro" title="Excluir registro">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 6v18h18v-18h-18zm5 14c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm5 0c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm5 0c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm4-18v2h-20v-2h5.711c.9 0 1.631-1.099 1.631-2h5.315c0 .901.73 2 1.631 2h5.712z"/>
+              </svg>
+            </button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7">Nenhum registro.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<form method="post" hx-post="{% url 'drivecar:registros_peca' veiculo.id peca.id %}" hx-target="#registros-{{ peca.id }}" class="registro-form">
+  {% csrf_token %}
+  <div class="form-grid">
+    <div class="col col-2">
+      <label class="field-label" for="id_data_{{ peca.id }}">Data</label>
+      {{ form.data|add_class:'input input-sm' }}
+    </div>
+    <div class="col col-2">
+      <label class="field-label" for="id_km_{{ peca.id }}">KM</label>
+      {{ form.km|add_class:'input input-sm' }}
+    </div>
+    <div class="col col-2">
+      <label class="field-label" for="id_preco_{{ peca.id }}">Preço</label>
+      {{ form.preco|add_class:'input input-sm' }}
+    </div>
+    <div class="col col-1">
+      <label class="field-label">Troca</label>
+      <div class="inline-center">{{ form.troca }} </div>
+    </div>
+    <div class="col col-1">
+      <label class="field-label" for="id_garantia_{{ peca.id }}">Garantia</label>
+      {{ form.garantia_meses|add_class:'input input-xs' }}
+    </div>
+    <div class="col col-6">
+      <label class="field-label" for="id_obs_{{ peca.id }}">Observações</label>
+      {{ form.observacoes|add_class:'textarea textarea-sm' }}
+    </div>
+    <div class="col col-12">
+      <button type="submit" class="btn-primary">[+] Adicionar registro</button>
+    </div>
+  </div>
+</form>
+
+<script>
+// Função simples de confirmação para exclusão
+function confirmarExclusao() {
+  return confirm('❓ Tem certeza que deseja excluir este registro de manutenção?\n\n⚠️ Esta ação não pode ser desfeita!');
+}
+
+// Configurar formatação de campos e foco no formulário
+setTimeout(function() {
+  var form = document.querySelector('#registros-{{ peca.id }} form.registro-form');
+  if (form) {
+    var first = form.querySelector('input[type="date"], input[type="number"], textarea');
+    if (first) first.focus();
+    
+    // ===== FORMATAÇÃO DO CAMPO KM =====
+    var kmField = form.querySelector('input[name$="km"]');
+    if (kmField) {
+      console.log('🚗 Campo KM encontrado, configurando formatação');
+      
+      // Mudamos o tipo para text para permitir formatação visual
+      kmField.type = 'text';
+      kmField.placeholder = 'Ex: 123.456,789';
+      
+      // Função para formatar KM com pontos e vírgula
+      function formatarKM(valor) {
+        // Remove tudo que não é número
+        var numero = valor.replace(/[^\d]/g, '');
+        
+        if (numero === '') return '';
+        
+        // Adiciona zeros à esquerda se necessário para ter pelo menos 3 dígitos
+        while (numero.length < 4) {
+          numero = '0' + numero;
+        }
+        
+        // Separa em grupos: parte inteira e decimais
+        var parteInteira = numero.slice(0, -3);
+        var decimais = numero.slice(-3);
+        
+        // Formata parte inteira com pontos
+        parteInteira = parteInteira.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        
+        // Retorna formatado
+        return parteInteira + ',' + decimais;
+      }
+      
+      // Função para obter valor numérico do KM
+      function obterValorNumericoKM(valorFormatado) {
+        if (!valorFormatado) return '';
+        // Remove pontos e substitui vírgula por ponto
+        return valorFormatado.replace(/\./g, '').replace(',', '.');
+      }
+      
+      // Evento de digitação no campo KM
+      kmField.addEventListener('input', function(e) {
+        var valorDigitado = e.target.value;
+        var valorFormatado = formatarKM(valorDigitado);
+        
+        console.log('🚗 KM digitado:', valorDigitado, '→ formatado:', valorFormatado);
+        
+        // Atualiza o campo visualmente
+        e.target.value = valorFormatado;
+        
+        // Posiciona cursor no final
+        setTimeout(function() {
+          e.target.setSelectionRange(valorFormatado.length, valorFormatado.length);
+        }, 0);
+      });
+      
+      // Evento ao sair do campo (blur)
+      kmField.addEventListener('blur', function(e) {
+        var valorFormatado = e.target.value;
+        var valorNumerico = obterValorNumericoKM(valorFormatado);
+        console.log('🚗 KM final:', valorFormatado, '→ numérico:', valorNumerico);
+      });
+      
+      // Antes do submit, preparar valor para envio
+      form.addEventListener('submit', function() {
+        var valorOriginal = kmField.value;
+        var valorNumerico = obterValorNumericoKM(valorOriginal);
+        
+        // Temporarily change to numeric value for form submission
+        kmField.value = valorNumerico;
+        console.log('🚗 Enviando KM:', valorOriginal, '→', valorNumerico);
+        
+        // Restore formatted value after a short delay
+        setTimeout(function() {
+          kmField.value = valorOriginal;
+        }, 100);
+      });
+    }
+    
+    // ===== FORMATAÇÃO DO CAMPO PREÇO =====
+    var precoField = form.querySelector('input[name$="preco"]');
+    if (precoField) {
+      console.log('💰 Campo Preço encontrado, configurando formatação');
+      
+      // Mudamos o tipo para text para permitir formatação visual
+      precoField.type = 'text';
+      precoField.placeholder = 'R$ 0,00';
+      
+      // Função para formatar preço brasileiro
+      function formatarPreco(valor) {
+        // Remove tudo que não é número
+        var numero = valor.replace(/[^\d]/g, '');
+        
+        if (numero === '') return 'R$ ';
+        
+        // Converte para centavos (adiciona zeros se necessário)
+        while (numero.length < 3) {
+          numero = '0' + numero;
+        }
+        
+        // Separa reais e centavos
+        var centavos = numero.slice(-2);
+        var reais = numero.slice(0, -2);
+        
+        // Adiciona pontos nos milhares
+        reais = reais.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        
+        // Retorna formatado
+        return 'R$ ' + reais + ',' + centavos;
+      }
+      
+      // Função para obter valor numérico do preção
+      function obterValorNumericoPreco(valorFormatado) {
+        if (!valorFormatado || valorFormatado === 'R$ ') return '';
+        // Remove R$, espaços e pontos, substitui vírgula por ponto
+        return valorFormatado.replace('R$ ', '').replace(/\./g, '').replace(',', '.');
+      }
+      
+      // Evento de digitação no campo Preço
+      precoField.addEventListener('input', function(e) {
+        var valorDigitado = e.target.value;
+        var valorFormatado = formatarPreco(valorDigitado);
+        
+        console.log('💰 Preço digitado:', valorDigitado, '→ formatado:', valorFormatado);
+        
+        // Atualiza o campo visualmente
+        e.target.value = valorFormatado;
+        
+        // Mantém cursor no final
+        setTimeout(function() {
+          e.target.setSelectionRange(valorFormatado.length, valorFormatado.length);
+        }, 0);
+      });
+      
+      // Evento ao focar no campo
+      precoField.addEventListener('focus', function(e) {
+        if (e.target.value === '' || e.target.value === 'R$ 0,00') {
+          e.target.value = 'R$ ';
+          console.log('💰 Campo focado, definindo R$');
+        }
+        
+        // Posiciona cursor no final
+        setTimeout(function() {
+          e.target.setSelectionRange(e.target.value.length, e.target.value.length);
+        }, 10);
+      });
+      
+      // Inicializar campo com R$ se estiver vazio
+      if (precoField.value === '') {
+        precoField.value = 'R$ ';
+      }
+      
+      // Evento ao sair do campo (blur)
+      precoField.addEventListener('blur', function(e) {
+        var valorFormatado = e.target.value;
+        var valorNumerico = obterValorNumericoPreco(valorFormatado);
+        console.log('💰 Preço final:', valorFormatado, '→ numérico:', valorNumerico);
+        
+        // Se campo vazio, voltar ao placeholder
+        if (valorFormatado === 'R$ ' || valorFormatado === '') {
+          e.target.value = '';
+        }
+      });
+      
+      // Antes do submit, preparar valor para envio
+      form.addEventListener('submit', function() {
+        var valorOriginal = precoField.value;
+        var valorNumerico = obterValorNumericoPreco(valorOriginal);
+        
+        // Temporarily change to numeric value for form submission
+        if (valorNumerico) {
+          precoField.value = valorNumerico;
+          console.log('💰 Enviando Preço:', valorOriginal, '→', valorNumerico);
+        }
+        
+        // Restore formatted value after a short delay
+        setTimeout(function() {
+          precoField.value = valorOriginal;
+        }, 100);
+      });
+    }
+    
+    console.log('Formatação de campos configurada para peça {{ peca.id }}');
+  }
+}, 200);
+
+console.log('✅ Sistema carregado para peça {{ peca.id }}');
+</script>

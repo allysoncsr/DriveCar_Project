@@ -1,0 +1,157 @@
+/* Arquivo de estilos mínimo criado para resolver staticfiles.W004 */
+body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+:root{
+	--bg:#f3f6fb;
+	--primary:#0052a3; /* tom de azul ajustado */
+	--muted:#6b7280;
+	--card:#ffffff;
+	--accent:#0074d9;
+}
+
+body { font-family: Inter, Arial, sans-serif; margin: 0; padding: 0; background:var(--bg); color:#0f1724 }
+header { background: linear-gradient(90deg,var(--primary),#0a58b5); color: #fff; padding: 1rem; }
+main { padding: 1.25rem; max-width:1100px; margin:0 auto }
+
+/* Header / Nav */
+.site-header{ background:var(--primary); color:#fff; box-shadow:0 4px 12px rgba(5,20,50,0.08)}
+.site-header .header-inner{ display:flex; align-items:center; justify-content:space-between; max-width:1100px; margin:0 auto; padding:0.6rem 1rem }
+.logo{ height:80px }
+.main-nav{ display:flex; gap:0.65rem; align-items:center }
+.nav-item{ color:#fff; text-decoration:none; padding:0.45rem 0.8rem; background: rgba(255,255,255,0.08); border-radius:8px; font-weight:600 }
+.nav-item:hover{ background: rgba(255,255,255,0.14); box-shadow: inset 0 -2px 0 rgba(255,255,255,0.02) }
+
+/* Vehicles grid */
+.vehicle-grid{ display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:1rem; margin-top:1rem }
+.vehicle-card{ background:var(--card); border-radius:12px; padding:0.9rem; box-shadow:0 8px 20px rgba(12,45,88,0.06); border:1px solid rgba(7,24,60,0.04); position:relative }
+.vehicle-link{ text-decoration:none; color:inherit; display:block }
+.vehicle-title{ font-weight:700; font-size:1.05rem; color:#07224a }
+.vehicle-model{ color:var(--muted); margin-left:0.3rem; font-weight:600 }
+.vehicle-meta{ color:var(--muted); font-size:0.9rem; margin-top:0.35rem }
+.vehicle-maintenance-cost{ 
+  color:#0b6b3a; 
+  font-size:0.85rem; 
+  margin-top:0.5rem; 
+  padding:0.4rem 0.6rem; 
+  background:linear-gradient(90deg, #e6f7ee, #f0fbf3); 
+  border-radius:6px; 
+  border-left:3px solid #0b6b3a;
+  display:flex;
+  align-items:center;
+  gap:0.3rem;
+}
+.vehicle-maintenance-cost strong{ 
+  color:#065f32; 
+  font-weight:700; 
+}
+.delete-btn{ position:absolute; top:0.6rem; right:0.6rem; background:none; border:none; color:#dc3545; cursor:pointer; padding:0.4rem; border-radius:6px; opacity:0.8; transition:all 0.2s ease; z-index:10; display:flex; align-items:center; justify-content:center }
+.delete-btn:hover{ opacity:1; background:rgba(220,53,69,0.15); transform:scale(1.15); color:#b21e2f }
+.delete-btn svg{ width:16px; height:16px; fill:currentColor }
+
+@media(max-width:700px){
+	.site-header .header-inner{ padding:0.6rem }
+	.logo{ height:64px }
+	.main-nav{ gap:0.4rem }
+}
+.messages { list-style: none; padding: 0; }
+.message { padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; }
+.message.error { background: #fdd; }
+.message.success { background: #dfd; }
+
+/* Manutenção - sanfona e tabela */
+.categorias section { margin-bottom: 1rem; }
+.categorias{ position:static }
+.categoria { border-radius:10px; overflow:visible; position:relative }
+.categoria + .categoria { margin-top:0.6rem }
+.categoria-toggle{ display:flex; justify-content:space-between; align-items:center; width:100%; padding:0.8rem 1rem; background:var(--card); border:1px solid #e6eefc; border-radius:8px; cursor:pointer; font-weight:700; color:var(--primary) }
+.categoria-toggle:hover{ background:#f7fbff }
+.categoria-title{ font-size:1rem }
+.categoria-count{ background:#eef6ff; color:var(--primary); padding:0.2rem 0.45rem; border-radius:999px; font-weight:700; font-size:0.85rem }
+.categoria-body.collapse{ max-height:0; overflow:hidden; transition:max-height 320ms ease; }
+.categoria-body.open{ padding:0.7rem 0.9rem; background:transparent; transition:max-height 360ms ease; }
+.categoria-body ul{ list-style:none; margin:0; padding:0.4rem 0 }
+.peca-item { list-style:none; margin:0.35rem 0; }
+.peca-link { display:inline-block; padding:0.6rem 0.8rem; text-decoration:none; color:var(--primary); background:var(--card); border-radius:6px; border:1px solid #e6eefc }
+.peca-link:hover { background:#f0f7ff }
+.peca-registros.collapse{ max-height:0; overflow:hidden; transition:max-height 320ms ease; }
+.peca-registros.open{ background:var(--card); border-radius:6px; padding:0.75rem; margin-top:0.5rem; box-shadow:0 8px 20px rgba(12,45,88,0.06); overflow:hidden; transition:max-height 360ms ease; }
+.peca-registros.open{ position:relative; z-index:0 }
+.peca-registros table{ width:100%; border-collapse:collapse; background:transparent }
+.peca-registros th, .peca-registros td{ border-bottom:1px solid #eef2f7; padding:0.5rem 0.6rem; text-align:left; }
+.peca-registros th{ color:var(--muted); font-size:0.9rem }
+.records-table tr:nth-child(even){ background:#fcfdff }
+.records-table .registro-row:hover{ background:#f0f7ff }
+.td-actions{ width:40px; text-align:center; padding:0.3rem !important }
+.btn-delete-registro{ background:none; border:none; color:#dc3545; cursor:pointer; padding:0.3rem; border-radius:4px; opacity:0.7; transition:all 0.2s ease; display:flex; align-items:center; justify-content:center }
+.btn-delete-registro:hover{ opacity:1; background:rgba(220,53,69,0.1); transform:scale(1.1) }
+.btn-delete-registro:disabled{ cursor:not-allowed; opacity:0.5; transform:none }
+.btn-delete-registro svg{ width:16px; height:16px; fill:currentColor }
+.registro-row{ 
+  transition: all 0.3s ease;
+}
+.registro-row.htmx-swapping {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+.empty-row td{ text-align:center; color:#6b7280; font-style:italic; padding:1rem }
+.peca-registros form{ margin-top:0.6rem; display:block; }
+.input{ padding:0.4rem 0.5rem; border:1px solid #e6eefc; border-radius:6px; background:#fff; }
+.textarea{ padding:0.4rem; border:1px solid #e6eefc; border-radius:6px; width:100%; }
+.btn-primary{ background:var(--accent); color:#fff; border:none; padding:0.45rem 0.8rem; border-radius:6px }
+.btn-danger{ background:#dc3545; color:#fff; border:none; padding:0.45rem 0.8rem; border-radius:6px; cursor:pointer }
+.btn-danger:hover{ background:#c82333 }
+.btn-secondary{ background:#6c757d; color:#fff; text-decoration:none; padding:0.45rem 0.8rem; border-radius:6px; display:inline-block; margin-left:0.5rem }
+.btn-secondary:hover{ background:#5a6268; color:#fff }
+.warning-text{ color:#856404; background:#fff3cd; padding:0.75rem; border-radius:6px; border:1px solid #ffeaa7; margin:1rem 0 }
+.notice{ padding:0.5rem 0.7rem; border-radius:6px; margin:0.5rem 0 }
+.notice.success{ background:#e6f7ee; color:#0b6b3a; }
+
+/* Form grid compacto para registros */
+.form-grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:0.5rem; align-items:start; grid-auto-rows: auto }
+.col{ box-sizing:border-box; min-width:0 }
+
+/* Estilos para o formulário de cadastro de veículo */
+.form-card{ background:var(--card); padding:1rem 1.1rem; border-radius:12px; box-shadow:0 8px 20px rgba(12,45,88,0.04); border:1px solid rgba(7,24,60,0.04); max-width:760px }
+.veiculo-form .form-row{ margin-bottom:0.8rem }
+.veiculo-form label{ display:block; font-weight:700; margin-bottom:0.35rem; color:var(--muted) }
+.input-rounded{ border-radius:10px; padding:0.5rem 0.75rem; border:1px solid #e6eefc; width:100%; box-sizing:border-box }
+.form-inline{ display:flex; gap:0.75rem }
+.form-inline .col-left{ flex:1 }
+.form-inline .col-right{ flex:1 }
+.form-actions{ margin-top:0.6rem }
+.veiculo-form .btn-primary{ padding:0.6rem 1rem; border-radius:10px }
+
+/* Espaçamento interno nas colunas para evitar que campos encostem nas bordas */
+.form-grid .col{ padding-left:0.25rem; padding-right:0.25rem }
+.col-1{ grid-column: span 1 }
+.col-2{ grid-column: span 2 }
+.col-3{ grid-column: span 3 }
+.col-4{ grid-column: span 4 }
+.col-5{ grid-column: span 5 }
+.col-6{ grid-column: span 6 }
+.col-12{ grid-column: span 12 }
+
+.input{ padding:0.35rem 0.45rem; border:1px solid #e6eefc; border-radius:6px; background:#fff; width:100%; box-sizing:border-box; max-width:100% }
+.input-sm{ padding:0.32rem 0.4rem; font-size:0.92rem }
+.input-xs{ padding:0.28rem 0.36rem; font-size:0.86rem; max-width:80px }
+.textarea{ padding:0.4rem; border:1px solid #e6eefc; border-radius:6px; width:100%; min-height:44px }
+.textarea-sm{ min-height:40px; font-size:0.95rem }
+
+.inline-center{ display:flex; align-items:center; gap:0.4rem }
+.label-inline{ color:var(--muted); font-weight:700 }
+
+/* Labels visíveis para campos do form compacto */
+.field-label{ display:block; font-weight:700; font-size:0.86rem; color:var(--muted); margin-bottom:0.25rem }
+
+/* Espaço extra específico para o campo Observações (col-4) para não ficar colado à direita */
+.col-5 .textarea{ padding-right:0.6rem }
+
+/* Accessibility helpers */
+.sr-only{ position:absolute !important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0 }
+
+.registro-form .btn-primary{ margin-top:0.4rem }
+
+/* Responsivo: empilhar colunas em telas pequenas para evitar overlap */
+@media (max-width: 700px){
+  .form-grid{ grid-template-columns: repeat(12, 1fr) }
+  .col-1, .col-2, .col-3, .col-4, .col-5, .col-6, .col-12{ grid-column: span 12 }
+}

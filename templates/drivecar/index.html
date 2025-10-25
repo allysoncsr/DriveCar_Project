@@ -1,0 +1,26 @@
+{% extends "drivecar/base.html" %}
+{% load humanize %}
+{% block title %}Meus Veículos{% endblock %}
+{% block content %}
+<h2>Meus veículos</h2>
+<div class="vehicle-grid">
+  {% for v in veiculos %}
+    <article class="vehicle-card">
+      <a class="vehicle-link" href="{% url 'drivecar:manutencao' v.id %}">
+        <div class="vehicle-title">{{ v.marca }} <span class="vehicle-model">{{ v.modelo }}</span></div>
+        <div class="vehicle-meta">{{ v.ano }} • {{ v.km_atual|intcomma }} km</div>
+        <div class="vehicle-maintenance-cost">
+          💰 Total gasto: <strong>{{ v.total_gasto_manutencao_formatado }}</strong>
+        </div>
+      </a>
+      <a href="{% url 'drivecar:excluir_veiculo' v.id %}" class="delete-btn" title="Excluir veículo" onclick="return confirm('Tem certeza que deseja excluir este veículo?')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 6v18h18v-18h-18zm5 14c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm5 0c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm5 0c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm4-18v2h-20v-2h5.711c.9 0 1.631-1.099 1.631-2h5.315c0 .901.73 2 1.631 2h5.712z"/>
+        </svg>
+      </a>
+    </article>
+  {% empty %}
+    <p>Nenhum veículo cadastrado.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "drivecar/base.html" %}
+{% block title %}Alertas{% endblock %}
+{% block content %}
+<h2>Alertas e Lembretes</h2>
+<table>
+  <thead><tr><th>Descrição</th><th>Veículo</th><th>Tipo</th><th>KM previsto</th><th>Data prevista</th><th>Ativo</th></tr></thead>
+  <tbody>
+    {% for a in alertas %}
+    <tr>
+      <td>{{ a.descricao }}</td>
+      <td>{{ a.veiculo }}</td>
+      <td>{{ a.get_tipo_display }}</td>
+      <td>{{ a.km_previsto|default:"-" }}</td>
+      <td>{{ a.data_prevista|default:"-" }}</td>
+      <td>{{ a.ativo|yesno:"Sim,Não" }}</td>
+    </tr>
+    {% empty %}
+      <tr><td colspan="6">Nenhum alerta.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

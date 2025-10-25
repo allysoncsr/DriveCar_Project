@@ -1,0 +1,17 @@
+{% extends "drivecar/base.html" %}
+{% block title %}Confirmar Exclusão{% endblock %}
+{% block content %}
+<div class="form-card">
+  <h2>Confirmar Exclusão</h2>
+  <p>Você tem certeza que deseja excluir o veículo <strong>{{ veiculo.marca }} {{ veiculo.modelo }}</strong>?</p>
+  <p class="warning-text">Esta ação não pode ser desfeita. Todos os registros de manutenção deste veículo também serão excluídos.</p>
+  
+  <div class="form-actions">
+    <form method="post" style="display: inline;">
+      {% csrf_token %}
+      <button type="submit" class="btn-danger">Sim, excluir</button>
+    </form>
+    <a href="{% url 'drivecar:index' %}" class="btn-secondary">Cancelar</a>
+  </div>
+</div>
+{% endblock %}
