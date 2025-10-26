@@ -20,4 +20,8 @@ urlpatterns = [
     path("veiculo/<int:veiculo_id>/peca/<int:peca_id>/registros/", views.registros_peca, name="registros_peca"),
     path("veiculo/<int:veiculo_id>/peca/<int:peca_id>/registro/<int:registro_id>/excluir/", views.excluir_registro, name="excluir_registro"),
     path("api/veiculo/<int:veiculo_id>/peca/<int:peca_id>/registros/", views.api_registro_create, name="api_registro_create"),
+    
+    # APIs para cascata de seleção
+    path("api/modelos/<int:marca_id>/", views.get_modelos_by_marca, name="get_modelos_by_marca"),
+    path("api/versoes/<int:modelo_id>/", views.get_versoes_by_modelo, name="get_versoes_by_modelo"),
 ]

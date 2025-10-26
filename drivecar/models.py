@@ -2,17 +2,115 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 
+
+class Marca(models.Model):
+    nome = models.CharField(_("nome da marca"), max_length=50, unique=True)
+    logo = models.CharField(_("logo/imagem"), max_length=200, blank=True)
+    ativo = models.BooleanField(_("ativo"), default=True)
+    
+    def __str__(self):
+        return self.nome
+    
+    class Meta:
+        verbose_name = _("Marca")
+        verbose_name_plural = _("Marcas")
+        ordering = ["nome"]
+
+
+class Modelo(models.Model):
+    marca = models.ForeignKey(Marca, on_delete=models.CASCADE, verbose_name=_("marca"))
+    nome = models.CharField(_("nome do modelo"), max_length=100)
+    ano_inicio = models.PositiveIntegerField(_("ano de início"), null=True, blank=True)
+    ano_fim = models.PositiveIntegerField(_("ano de fim"), null=True, blank=True)
+    ativo = models.BooleanField(_("ativo"), default=True)
+    
+    def __str__(self):
+        return f"{self.marca.nome} {self.nome}"
+    
+    class Meta:
+        verbose_name = _("Modelo")
+        verbose_name_plural = _("Modelos")
+        ordering = ["marca__nome", "nome"]
+        unique_together = ["marca", "nome"]
+
+
+class Versao(models.Model):
+    modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, verbose_name=_("modelo"))
+    nome = models.CharField(_("nome da versão"), max_length=100)
+    motor = models.CharField(_("motor"), max_length=50, blank=True)
+    combustivel = models.CharField(_("combustível"), max_length=20, blank=True)
+    transmissao = models.CharField(_("transmissão"), max_length=20, blank=True)
+    ano_inicio = models.PositiveIntegerField(_("ano de início"), null=True, blank=True)
+    ano_fim = models.PositiveIntegerField(_("ano de fim"), null=True, blank=True)
+    ativo = models.BooleanField(_("ativo"), default=True)
+    
+    def __str__(self):
+        return f"{self.modelo} {self.nome}"
+    
+    class Meta:
+        verbose_name = _("Versão")
+        verbose_name_plural = _("Versões")
+        ordering = ["modelo__marca__nome", "modelo__nome", "nome"]
+        unique_together = ["modelo", "nome"]
+
 class Veiculo(models.Model):
+    TIPO_COMBUSTIVEL_CHOICES = [
+        ('GASOLINA', 'Gasolina'),
+        ('ALCOOL', 'Álcool / Etanol'),
+        ('FLEX', 'Flex (Gasolina/Etanol)'),
+        ('DIESEL', 'Diesel'),
+        ('GNV', 'GNV (Gás Natural Veicular)'),
+        ('HIBRIDO', 'Híbrido'),
+        ('ELETRICO', 'Elétrico'),
+    ]
+    
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name=_("usuário"))
-    marca = models.CharField(_("marca"), max_length=50)
-    modelo = models.CharField(_("modelo"), max_length=50)
+    # Novos campos com ForeignKey
+    marca = models.ForeignKey(Marca, on_delete=models.PROTECT, verbose_name=_("marca"), null=True, blank=True)
+    modelo = models.ForeignKey(Modelo, on_delete=models.PROTECT, verbose_name=_("modelo"), null=True, blank=True)
+    versao = models.ForeignKey(Versao, on_delete=models.PROTECT, verbose_name=_("versão"), null=True, blank=True)
+    # Campos antigos mantidos temporariamente para compatibilidade
+    marca_legado = models.CharField(_("marca (legado)"), max_length=50, blank=True)
+    modelo_legado = models.CharField(_("modelo (legado)"), max_length=50, blank=True)
+    
     ano = models.PositiveIntegerField(_("ano"))
     placa = models.CharField(_("placa"), max_length=10, blank=True)
     km_atual = models.PositiveIntegerField(_("quilometragem atual"), default=0)
-    combustivel = models.CharField(_("combustível"), max_length=20, blank=True)
+    combustivel = models.CharField(_("combustível"), max_length=20, choices=TIPO_COMBUSTIVEL_CHOICES, blank=True)
 
     def __str__(self):
-        return f"{self.marca} {self.modelo} ({self.ano})"
+        # Usar novos campos se disponíveis, senão usar legado
+        marca_nome = self.marca.nome if self.marca else self.marca_legado
+        modelo_nome = self.modelo.nome if self.modelo else self.modelo_legado
+        versao_nome = f" {self.versao.nome}" if self.versao else ""
+        return f"{marca_nome} {modelo_nome}{versao_nome} ({self.ano})"
+    
+    @property
+    def marca_display(self):
+        return self.marca.nome if self.marca else self.marca_legado
+    
+    @property 
+    def modelo_display(self):
+        return self.modelo.nome if self.modelo else self.modelo_legado
+    
+    @property
+    def titulo_limpo(self):
+        """Retorna título sem duplicação de marca"""
+        marca_nome = self.marca.nome if self.marca else self.marca_legado
+        modelo_nome = self.modelo.nome if self.modelo else self.modelo_legado
+        
+        if marca_nome and modelo_nome:
+            # Se o nome do modelo já contém a marca, usar apenas o modelo
+            if marca_nome.upper() in modelo_nome.upper():
+                return modelo_nome
+            else:
+                return f"{marca_nome} {modelo_nome}"
+        elif modelo_nome:
+            return modelo_nome
+        elif marca_nome:
+            return marca_nome
+        else:
+            return "Veículo sem identificação"
 
     def total_gasto_manutencao(self):
         """Calcula o valor total gasto em manutenção deste veículo"""

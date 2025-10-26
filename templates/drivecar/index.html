@@ -7,7 +7,7 @@
   {% for v in veiculos %}
     <article class="vehicle-card">
       <a class="vehicle-link" href="{% url 'drivecar:manutencao' v.id %}">
-        <div class="vehicle-title">{{ v.marca }} <span class="vehicle-model">{{ v.modelo }}</span></div>
+        <div class="vehicle-title">{{ v.titulo_limpo }}</div>
         <div class="vehicle-meta">{{ v.ano }} • {{ v.km_atual|intcomma }} km</div>
         <div class="vehicle-maintenance-cost">
           💰 Total gasto: <strong>{{ v.total_gasto_manutencao_formatado }}</strong>

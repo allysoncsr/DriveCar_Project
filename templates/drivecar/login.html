@@ -20,25 +20,25 @@
     
     .login-container {
       background: white;
-      padding: 3rem;
+      padding: 2.5rem;
       border-radius: 20px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.1);
       width: 100%;
-      max-width: 400px;
+      max-width: 380px;
       text-align: center;
     }
     
     .logo {
-      width: 120px;
+      width: 100px;
       height: auto;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
     
     .login-title {
       font-size: 2rem;
       font-weight: bold;
       color: #2d3748;
-      margin-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
     }
     
     .login-subtitle {
@@ -119,6 +119,57 @@
     
     .btn-register:active {
       transform: translateY(0);
+    }
+    
+    /* Botões lado a lado */
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 1.5rem;
+    }
+    
+    .btn-primary, .btn-secondary {
+      flex: 1;
+      padding: 0.875rem 1rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(72, 187, 120, 0.3);
+    }
+    
+    .btn-primary:active, .btn-secondary:active {
+      transform: translateY(0);
+    }
+    
+    /* Responsivo para botões */
+    @media (max-width: 480px) {
+      .action-buttons {
+        flex-direction: column;
+        gap: 10px;
+      }
     }
     
     /* Modal Styles */
@@ -324,7 +375,6 @@
     
     <!-- Título -->
     <h1 class="login-title">Bem-vindo!</h1>
-    <p class="login-subtitle">Faça login para acessar o DriveCar</p>
     
     <!-- Mensagens -->
     {% if messages %}
@@ -364,24 +414,20 @@
           required>
       </div>
       
-      <button type="submit" class="btn-login">
-        🚗 Entrar no DriveCar
-      </button>
+      <!-- Botões lado a lado -->
+      <div class="action-buttons">
+        <button type="submit" class="btn-primary">
+          🚗 Entrar
+        </button>
+        <button type="button" id="openRegisterModal" class="btn-secondary">
+          👤 Cadastrar
+        </button>
+      </div>
     </form>
-    
-    <!-- Botões de ação -->
-    <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
-      <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin: 0 0 15px 0;">
-        Não tem uma conta?
-      </p>
-      <button id="openRegisterModal" class="btn-register">
-        👤 Cadastrar Nova Conta
-      </button>
-    </div>
     
     <!-- Footer -->
     <p class="footer-text">
-      DriveCar © 2025 - Sistema de Controle de Manutenção
+      DriveCar © 2025
     </p>
   </div>
 

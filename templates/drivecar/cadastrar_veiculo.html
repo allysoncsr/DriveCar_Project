@@ -6,32 +6,54 @@
 <div class="form-card">
   <form method="post" class="veiculo-form">
     {% csrf_token %}
-    <div class="form-row">
+    <div class="form-row cascade-select">
       <label for="id_marca">Marca</label>
-      {{ form.marca|add_class:'input input-rounded' }}
+      <select id="id_marca" name="marca" class="input input-rounded" required>
+        <option value="">Selecione uma marca</option>
+        {% for marca in marcas %}
+          <option value="{{ marca.id }}">{{ marca.nome }}</option>
+        {% endfor %}
+      </select>
     </div>
-    <div class="form-row">
+    <div class="form-row cascade-select">
       <label for="id_modelo">Modelo</label>
-      {{ form.modelo|add_class:'input input-rounded' }}
+      <select id="id_modelo" name="modelo" class="input input-rounded" disabled>
+        <option value="">Primeiro selecione uma marca</option>
+      </select>
+    </div>
+    <div class="form-row cascade-select">
+      <label for="id_versao">Versão</label>
+      <select id="id_versao" name="versao" class="input input-rounded" disabled>
+        <option value="">Primeiro selecione um modelo</option>
+      </select>
     </div>
     <div class="form-row form-inline">
       <div class="col-left">
         <label for="id_ano">Ano</label>
-        {{ form.ano|add_class:'input input-rounded' }}
+        <input type="number" id="id_ano" name="ano" class="input input-rounded" min="1900" max="2030" required>
       </div>
       <div class="col-right">
         <label for="id_placa">Placa</label>
-        {{ form.placa|add_class:'input input-rounded' }}
+        <input type="text" id="id_placa" name="placa" class="input input-rounded" maxlength="8" placeholder="ABC1234" required>
       </div>
     </div>
     <div class="form-row form-inline">
       <div class="col-left">
         <label for="id_km_atual">Quilometragem atual</label>
-        {{ form.km_atual|add_class:'input input-rounded' }}
+        <input type="number" id="id_km_atual" name="km_atual" class="input input-rounded" min="0" placeholder="0">
       </div>
       <div class="col-right">
         <label for="id_combustivel">Combustível</label>
-        {{ form.combustivel|add_class:'input input-rounded' }}
+        <select id="id_combustivel" name="combustivel" class="input input-rounded">
+          <option value="">Selecione o combustível</option>
+          <option value="GASOLINA">Gasolina</option>
+          <option value="ALCOOL">Álcool / Etanol</option>
+          <option value="FLEX">Flex (Gasolina/Etanol)</option>
+          <option value="DIESEL">Diesel</option>
+          <option value="GNV">GNV (Gás Natural Veicular)</option>
+          <option value="HIBRIDO">Híbrido</option>
+          <option value="ELETRICO">Elétrico</option>
+        </select>
       </div>
     </div>
     <div class="form-actions">
@@ -39,26 +61,169 @@
     </div>
   </form>
 </div>
+
 <script>
-  // Proteção: se HTMX estiver presente, removemos atributos que poderiam
-  // transformar esse form em uma submissão HTMX. Mantemos submissão tradicional.
-  (function(){
-    try{
-      if(window.htmx){
-        var form = document.querySelector('form[method="post"]');
-        if(form){
-          // remover atributos hx-* do próprio form e dos seus filhos
-          var els = form.querySelectorAll('[hx-post],[hx-get],[hx-boost],[data-hx-post],[data-hx-get]');
-          els.forEach(function(el){
-            Array.from(el.attributes).forEach(function(attr){
-              if(attr.name.indexOf('hx-') === 0 || attr.name.indexOf('data-hx-') === 0){
-                el.removeAttribute(attr.name);
-              }
-            });
-          });
+document.addEventListener('DOMContentLoaded', function() {
+    const marcaSelect = document.getElementById('id_marca');
+    const modeloSelect = document.getElementById('id_modelo');
+    const versaoSelect = document.getElementById('id_versao');
+    
+    // Função para adicionar feedback visual de loading
+    function setLoading(element, isLoading) {
+        const container = element.closest('.cascade-select');
+        if (isLoading) {
+            container.classList.add('loading');
+        } else {
+            container.classList.remove('loading');
         }
-      }
-    }catch(e){/* não falhar por JS */}
-  })();
+    }
+    
+    // Função para marcar como completado
+    function setComplete(element) {
+        element.classList.add('cascade-complete');
+        setTimeout(() => element.classList.remove('cascade-complete'), 2000);
+    }
+
+    // Quando a marca é selecionada
+    marcaSelect.addEventListener('change', function() {
+        const marcaId = this.value;
+        
+        // Reset modelo e versão
+        modeloSelect.innerHTML = '<option value="">Carregando modelos...</option>';
+        modeloSelect.disabled = true;
+        versaoSelect.innerHTML = '<option value="">Primeiro selecione um modelo</option>';
+        versaoSelect.disabled = true;
+        
+        if (marcaId) {
+            setLoading(modeloSelect, true);
+            
+            // Buscar modelos da marca
+            fetch(`/api/modelos/${marcaId}/`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Erro na resposta');
+                    return response.json();
+                })
+                .then(data => {
+                    modeloSelect.innerHTML = '<option value="">Selecione um modelo</option>';
+                    
+                    if (data.modelos && data.modelos.length > 0) {
+                        data.modelos.forEach(modelo => {
+                            modeloSelect.innerHTML += `<option value="${modelo.id}">${modelo.nome}</option>`;
+                        });
+                        modeloSelect.disabled = false;
+                        setComplete(marcaSelect);
+                    } else {
+                        modeloSelect.innerHTML = '<option value="">Nenhum modelo encontrado</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar modelos:', error);
+                    modeloSelect.innerHTML = '<option value="">Erro ao carregar modelos</option>';
+                })
+                .finally(() => {
+                    setLoading(modeloSelect, false);
+                });
+        } else {
+            modeloSelect.innerHTML = '<option value="">Primeiro selecione uma marca</option>';
+        }
+    });
+
+    // Quando o modelo é selecionado
+    modeloSelect.addEventListener('change', function() {
+        const modeloId = this.value;
+        
+        // Reset versão
+        versaoSelect.innerHTML = '<option value="">Carregando versões...</option>';
+        versaoSelect.disabled = true;
+        
+        if (modeloId) {
+            setLoading(versaoSelect, true);
+            
+            // Buscar versões do modelo
+            fetch(`/api/versoes/${modeloId}/`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Erro na resposta');
+                    return response.json();
+                })
+                .then(data => {
+                    versaoSelect.innerHTML = '<option value="">Selecione uma versão (opcional)</option>';
+                    
+                    if (data.versoes && data.versoes.length > 0) {
+                        data.versoes.forEach(versao => {
+                            const motorInfo = versao.motor ? ` - ${versao.motor}` : '';
+                            const combustivelInfo = versao.combustivel ? ` (${versao.combustivel})` : '';
+                            versaoSelect.innerHTML += `<option value="${versao.id}">${versao.nome}${motorInfo}${combustivelInfo}</option>`;
+                        });
+                        versaoSelect.disabled = false;
+                        setComplete(modeloSelect);
+                    } else {
+                        versaoSelect.innerHTML = '<option value="">Nenhuma versão encontrada</option>';
+                        versaoSelect.disabled = false; // Permitir submissão sem versão
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar versões:', error);
+                    versaoSelect.innerHTML = '<option value="">Erro ao carregar versões</option>';
+                    versaoSelect.disabled = false; // Permitir submissão mesmo com erro
+                })
+                .finally(() => {
+                    setLoading(versaoSelect, false);
+                });
+        } else {
+            versaoSelect.innerHTML = '<option value="">Primeiro selecione um modelo</option>';
+        }
+    });
+    
+    // Feedback ao selecionar versão
+    versaoSelect.addEventListener('change', function() {
+        if (this.value) {
+            setComplete(this);
+        }
+    });
+    
+    // Validação da placa (formato brasileiro)
+    const placaInput = document.getElementById('id_placa');
+    placaInput.addEventListener('input', function() {
+        let valor = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        
+        // Formato Mercosul: ABC1D23 ou formato antigo: ABC1234
+        if (valor.length <= 7) {
+            this.value = valor;
+        } else if (valor.length === 8) {
+            // Formato antigo ABC1234
+            this.value = valor.substring(0, 7);
+        }
+    });
+    
+    // Auto-completar ano atual como padrão
+    const anoInput = document.getElementById('id_ano');
+    if (!anoInput.value) {
+        anoInput.value = new Date().getFullYear();
+    }
+    
+    // Formatação da quilometragem
+    const kmInput = document.getElementById('id_km_atual');
+    kmInput.addEventListener('input', function() {
+        // Remove caracteres não numéricos
+        let valor = this.value.replace(/\D/g, '');
+        
+        // Formatar com pontos de milhar
+        if (valor) {
+            this.dataset.rawValue = valor;
+            this.value = parseInt(valor).toLocaleString('pt-BR');
+        } else {
+            this.dataset.rawValue = '';
+            this.value = '';
+        }
+    });
+    
+    // Antes de submeter, restaurar valor numérico da quilometragem
+    document.querySelector('form').addEventListener('submit', function() {
+        const rawKm = kmInput.dataset.rawValue;
+        if (rawKm) {
+            kmInput.value = rawKm;
+        }
+    });
+});
 </script>
 {% endblock %}

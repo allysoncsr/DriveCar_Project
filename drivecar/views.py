@@ -16,7 +16,7 @@ import json
 class VeiculoForm(forms.ModelForm):
     class Meta:
         model = Veiculo
-        fields = ["marca", "modelo", "ano", "placa", "km_atual", "combustivel"]
+        fields = ["marca", "modelo", "versao", "ano", "placa", "km_atual", "combustivel"]
 
 
 class RegistroForm(forms.ModelForm):
@@ -177,22 +177,72 @@ def index(request):
 
 @login_required
 def cadastrar_veiculo(request):
+    from .models import Marca, Modelo, Versao
+    
     if request.method == "POST":
-        form = VeiculoForm(request.POST)
-        if form.is_valid():
-            # Associar o veículo ao usuário logado antes de salvar
-            veiculo = form.save(commit=False)
-            veiculo.usuario = request.user
-            veiculo.save()
-            # Se a requisição vier via HTMX, retorne um HX-Redirect header
-            if request.headers.get("HX-Request") == "true":
-                resp = HttpResponse()
-                resp["HX-Redirect"] = reverse("drivecar:index")
-                return resp
-            return redirect("drivecar:index")
-    else:
-        form = VeiculoForm()
-    return render(request, "drivecar/cadastrar_veiculo.html", {"form": form})
+        # Processar dados do formulário manualmente para lidar com os ForeignKeys
+        marca_id = request.POST.get('marca')
+        modelo_id = request.POST.get('modelo')
+        versao_id = request.POST.get('versao')
+        ano = request.POST.get('ano')
+        placa = request.POST.get('placa')
+        km_atual = request.POST.get('km_atual')
+        combustivel = request.POST.get('combustivel')
+        
+        # Validação básica
+        errors = []
+        if not marca_id:
+            errors.append("Marca é obrigatória")
+        if not modelo_id:
+            errors.append("Modelo é obrigatório")
+        if not ano:
+            errors.append("Ano é obrigatório")
+        if not placa:
+            errors.append("Placa é obrigatória")
+            
+        if not errors:
+            try:
+                # Buscar as instâncias dos ForeignKeys
+                marca = Marca.objects.get(id=marca_id) if marca_id else None
+                modelo = Modelo.objects.get(id=modelo_id) if modelo_id else None
+                versao = Versao.objects.get(id=versao_id) if versao_id else None
+                
+                # Criar o veículo
+                veiculo = Veiculo.objects.create(
+                    usuario=request.user,
+                    marca=marca,
+                    modelo=modelo,
+                    versao=versao,
+                    ano=int(ano),
+                    placa=placa.upper(),
+                    km_atual=int(km_atual) if km_atual else 0,
+                    combustivel=combustivel
+                )
+                
+                messages.success(request, f"Veículo {marca.nome} {modelo.nome} cadastrado com sucesso!")
+                
+                # Se a requisição vier via HTMX, retorne um HX-Redirect header
+                if request.headers.get("HX-Request") == "true":
+                    resp = HttpResponse()
+                    resp["HX-Redirect"] = reverse("drivecar:index")
+                    return resp
+                return redirect("drivecar:index")
+                
+            except (Marca.DoesNotExist, Modelo.DoesNotExist, Versao.DoesNotExist) as e:
+                errors.append("Erro ao processar seleção de veículo")
+            except ValueError as e:
+                errors.append("Dados inválidos fornecidos")
+        
+        # Se há erros, mostrar na página
+        for error in errors:
+            messages.error(request, error)
+    
+    # Carregar marcas para o dropdown
+    marcas = Marca.objects.filter(ativo=True).order_by('nome')
+    
+    return render(request, "drivecar/cadastrar_veiculo.html", {
+        "marcas": marcas
+    })
 
 
 
@@ -367,43 +417,28 @@ def register_view(request):
             except Exception as e:
                 return JsonResponse({
                     'success': False,
-                    'errors': {'general': f'Erro ao criar conta: {str(e)}'}
-                })
-        
-        else:
-            # Processar dados da página normal
-            username = request.POST.get('username')
-            password = request.POST.get('password')
-            password_confirm = request.POST.get('password_confirm')
-            first_name = request.POST.get('first_name')
-            email = request.POST.get('email')
-            
-            # Validações normais
-            if not all([username, password, password_confirm, first_name]):
-                messages.error(request, 'Por favor, preencha todos os campos obrigatórios.')
-            elif password != password_confirm:
-                messages.error(request, 'As senhas não coincidem.')
-            elif len(password) < 6:
-                messages.error(request, 'A senha deve ter pelo menos 6 caracteres.')
-            elif User.objects.filter(username=username).exists():
-                messages.error(request, 'Este nome de usuário já está em uso.')
-            elif email and User.objects.filter(email=email).exists():
-                messages.error(request, 'Este email já está cadastrado.')
-            else:
-                # Criar usuário
-                try:
-                    user = User.objects.create_user(
-                        username=username,
-                        password=password,
-                        first_name=first_name,
-                        email=email
-                    )
-                    messages.success(request, f'Conta criada com sucesso! Bem-vindo, {first_name}!')
-                    # Fazer login automático após cadastro
-                    login(request, user)
-                    return redirect('drivecar:index')
-                except Exception as e:
-                    messages.error(request, 'Erro ao criar conta. Tente novamente.')
-    
-    return render(request, 'drivecar/register.html')
+            'errors': {'general': f'Erro ao criar conta: {str(e)}'}
+        })
+
+
+@login_required
+def get_modelos_by_marca(request, marca_id):
+    """API para buscar modelos de uma marca específica"""
+    try:
+        from .models import Modelo
+        modelos = Modelo.objects.filter(marca_id=marca_id, ativo=True).values('id', 'nome')
+        return JsonResponse({'modelos': list(modelos)})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required  
+def get_versoes_by_modelo(request, modelo_id):
+    """API para buscar versões de um modelo específico"""
+    try:
+        from .models import Versao
+        versoes = Versao.objects.filter(modelo_id=modelo_id, ativo=True).values('id', 'nome', 'motor', 'combustivel')
+        return JsonResponse({'versoes': list(versoes)})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 

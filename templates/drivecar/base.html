@@ -6,6 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>DriveCar - {% block title %}{% endblock %}</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- adicionar CSS do Tailwind depois -->
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <!-- HTMX -->
@@ -21,12 +25,14 @@
       </a>
       <nav class="main-nav">
         <a class="nav-item" href="{% url 'drivecar:cadastrar_veiculo' %}">Cadastrar veículo</a>
-        <a class="nav-item" href="/admin/">Admin</a>
         <div class="user-info">
           <span class="welcome-text">Olá, {{ user.first_name|default:user.username }}!</span>
           <a class="nav-item nav-logout" href="{% url 'drivecar:logout' %}">Sair</a>
         </div>
       </nav>
+      
+      <!-- Botão Admin discreto no canto -->
+      <a class="admin-btn" href="/admin/" title="Área administrativa">⚙️</a>
     </div>
   </header>
 
