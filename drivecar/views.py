@@ -41,8 +41,96 @@ def manutencao(request, veiculo_id):
     categorias = {}
     for p in pecas:
         categorias.setdefault(p.get_categoria_display(), []).append(p)
-    return render(request, "drivecar/manutencao.html", {"veiculo": veiculo, "categorias": categorias})
+    
+    # Obter alertas específicos deste veículo e criar mapeamento por peça
+    alertas_veiculo = veiculo.get_alertas_ativos()
+    alertas_por_peca = {}
+    categorias_com_alerta = set()
+    categorias_tipo_alerta = {}  # Mapear categoria -> tipo de alerta mais crítico
+    pecas_com_alerta = []
+    
+    # Hierarquia de criticidade dos alertas
+    criticidade = {'urgente': 3, 'atencao': 2, 'baixo': 1}
+    
+    for alerta in alertas_veiculo:
+        # Encontrar a peça correspondente ao alerta
+        peca_nome = alerta['item']
+        peca_completa = alerta.get('peca_completa', peca_nome)
+        
+        # Tentar encontrar pela peça completa primeiro, depois pela simplificada
+        peca = None
+        try:
+            # Para óleo, priorizar a categoria Motor
+            if 'óleo' in peca_nome.lower() or 'oleo' in peca_nome.lower():
+                peca = Peca.objects.filter(nome=peca_completa, categoria='motor').first()
+            
+            if not peca:
+                peca = Peca.objects.filter(nome=peca_completa).first()
+        except:
+            pass
+            
+        if not peca:
+            try:
+                # Buscar por nome que contenha a palavra-chave
+                if 'óleo' in peca_nome.lower() or 'oleo' in peca_nome.lower():
+                    peca = Peca.objects.filter(nome__icontains=peca_nome, categoria='motor').first()
+                
+                if not peca:
+                    peca = Peca.objects.filter(nome__icontains=peca_nome).first()
+            except:
+                pass
+        
+        if peca:
+            alertas_por_peca[peca.id] = alerta
+            categoria = peca.get_categoria_display()
+            categorias_com_alerta.add(categoria)
+            pecas_com_alerta.append(peca.id)
+            
+            # Determinar o tipo de alerta mais crítico para a categoria
+            tipo_atual = alerta['urgencia']  # Corrigido: usar 'urgencia' em vez de 'tipo'
+            if categoria not in categorias_tipo_alerta:
+                categorias_tipo_alerta[categoria] = tipo_atual
+            else:
+                if criticidade.get(tipo_atual, 0) > criticidade.get(categorias_tipo_alerta[categoria], 0):
+                    categorias_tipo_alerta[categoria] = tipo_atual
+    
+    return render(request, "drivecar/manutencao.html", {
+        "veiculo": veiculo, 
+        "categorias": categorias,
+        "alertas_por_peca": alertas_por_peca,
+        "categorias_com_alerta": categorias_com_alerta,
+        "categorias_tipo_alerta": categorias_tipo_alerta,
+        "pecas_com_alerta": pecas_com_alerta
+    })
 
+
+@login_required
+def buscar_pecas(request):
+    """Busca rápida de peças por nome via AJAX"""
+    if request.method == 'GET':
+        termo = request.GET.get('q', '').strip()
+        veiculo_id = request.GET.get('veiculo_id')
+        
+        if not termo or len(termo) < 2:
+            return JsonResponse({'pecas': []})
+        
+        # Buscar peças que contenham o termo no nome
+        pecas = Peca.objects.filter(
+            nome__icontains=termo
+        ).order_by('categoria', 'nome')[:10]  # Limitar a 10 resultados
+        
+        resultados = []
+        for peca in pecas:
+            resultados.append({
+                'id': peca.id,
+                'nome': peca.nome,
+                'categoria': peca.get_categoria_display(),
+                'url': reverse('drivecar:registros_peca', args=[veiculo_id, peca.id])
+            })
+        
+        return JsonResponse({'pecas': resultados})
+    
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
 
 @login_required  
 def registros_peca(request, veiculo_id, peca_id):
@@ -118,12 +206,21 @@ def registros_peca(request, veiculo_id, peca_id):
 
     registros = RegistroManutencao.objects.filter(veiculo=veiculo, peca=peca).order_by("-data")
     
+    # Verificar se há alerta para esta peça
+    alertas_veiculo = veiculo.get_alertas_ativos()
+    alerta_peca = None
+    for alerta in alertas_veiculo:
+        if alerta['item'] == peca.nome:
+            alerta_peca = alerta
+            break
+    
     return render(request, "drivecar/registros_peca_fragment.html", {
         "veiculo": veiculo, 
         "peca": peca, 
         "registros": registros, 
         "form": form, 
-        "saved": saved
+        "saved": saved,
+        "alerta_peca": alerta_peca
     })
 
 
@@ -185,7 +282,26 @@ def api_registro_create(request, veiculo_id, peca_id):
 def index(request):
     # Filtrar apenas os veículos do usuário logado
     veiculos = Veiculo.objects.filter(usuario=request.user)
-    return render(request, "drivecar/index.html", {"veiculos": veiculos})
+    
+    # Coletar alertas de todos os veículos
+    alertas_urgentes = []
+    for veiculo in veiculos:
+        alertas_veiculo = veiculo.get_alertas_ativos()
+        # Adicionar apenas os 2 primeiros alertas mais urgentes por veículo
+        for alerta in alertas_veiculo[:2]:
+            alerta['veiculo'] = veiculo
+            alertas_urgentes.append(alerta)
+    
+    # Ordenar todos os alertas por urgência
+    alertas_urgentes.sort(key=lambda x: (x['urgencia'] != 'urgente', x['km_restante']))
+    
+    # Limitar a 4 alertas na tela principal
+    alertas_urgentes = alertas_urgentes[:4]
+    
+    return render(request, "drivecar/index.html", {
+        "veiculos": veiculos,
+        "alertas_urgentes": alertas_urgentes
+    })
 
 @login_required
 def cadastrar_veiculo(request):

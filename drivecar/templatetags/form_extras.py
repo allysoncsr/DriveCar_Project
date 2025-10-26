@@ -16,3 +16,14 @@ def add_class(field, css_class):
         return field.as_widget(attrs={'class': classes})
     except Exception:
         return field
+
+@register.filter(name='get_item')
+def get_item(dictionary, key):
+    """Obtém um item de um dicionário no template.
+    
+    Uso: {{ dict|get_item:key }}
+    """
+    try:
+        return dictionary.get(key)
+    except (AttributeError, TypeError):
+        return None

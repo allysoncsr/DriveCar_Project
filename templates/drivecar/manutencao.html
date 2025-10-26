@@ -1,20 +1,41 @@
 {% extends 'drivecar/base.html' %}
+{% load form_extras %}
 {% block title %}Manutenção - {{ veiculo }}{% endblock %}
 {% block content %}
 <h2>Manutenção — {{ veiculo }}</h2>
+
+<!-- Busca Rápida de Peças -->
+<div class="busca-rapida">
+  <div class="busca-container">
+    <input type="text" 
+           id="busca-peca" 
+           placeholder="🔍 Buscar peça..." 
+           class="busca-input"
+           autocomplete="off">
+    <div id="resultados-busca" class="resultados-busca"></div>
+  </div>
+</div>
+
 <div class="categorias">
   {% for categoria, pecas in categorias.items %}
-    <section class="categoria">
+    <section class="categoria {% if categoria in categorias_com_alerta %}categoria-com-alerta categoria-alerta-{{ categorias_tipo_alerta|get_item:categoria }}{% endif %}">
       <button type="button" class="categoria-toggle" data-target="#categoria-{{ forloop.counter }}" aria-expanded="false">
         <span class="categoria-title">{{ categoria }}</span>
-        <span class="categoria-count">{{ pecas|length }}</span>
+        <div class="categoria-badges">
+          <span class="categoria-count {% if categoria in categorias_com_alerta %}alerta-{{ categorias_tipo_alerta|get_item:categoria }}{% endif %}">{{ pecas|length }}</span>
+        </div>
       </button>
 
       <div id="categoria-{{ forloop.counter }}" class="categoria-body collapse">
         <ul>
           {% for p in pecas %}
-            <li class="peca-item">
-              <a href="{% url 'drivecar:registros_peca' veiculo.id p.id %}" class="peca-link" data-target="#registros-{{ p.id }}">{{ p.nome }}</a>
+            <li class="peca-item {% if p.id in pecas_com_alerta %}peca-com-alerta{% endif %}">
+              <a href="{% url 'drivecar:registros_peca' veiculo.id p.id %}" class="peca-link" data-target="#registros-{{ p.id }}">
+                {{ p.nome }}
+                {% if p.id in pecas_com_alerta %}
+                  <span class="alerta-indicator">⚠️</span>
+                {% endif %}
+              </a>
               <div id="registros-{{ p.id }}" class="peca-registros collapse"></div>
             </li>
           {% endfor %}
@@ -24,6 +45,6 @@
   {% endfor %}
 </div>
 
-<!-- JS de accordion movido para static/js/main.js?v=1 -->
+<!-- JS de accordion movido para static/js/main.js?v=5 -->
 
 {% endblock %}

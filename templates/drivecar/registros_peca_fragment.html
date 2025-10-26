@@ -4,7 +4,22 @@
 <!-- CABEÇALHO DO FRAGMENTO             -->
 <!-- =================================== -->
 <div class="fragment-header">
-  <h4>Registros — {{ peca.nome }} ({{ veiculo }})</h4>
+  <div class="registro-title {% if alerta_peca %}registro-title-com-alerta{% endif %}">
+    <div class="registro-title-main">
+      <span class="registro-icon">🔧</span>
+      <div class="registro-text">
+        <span class="registro-label">Registros</span>
+        <span class="registro-peca">{{ peca.nome }}</span>
+        {% if alerta_peca %}
+          <div class="registro-alerta">
+            <span class="alerta-icon-mini">{{ alerta_peca.cor }}</span>
+            <span class="alerta-texto">{{ alerta_peca.status }}</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="registro-veiculo">{{ veiculo }}</div>
+  </div>
   
   {% if saved %}
     <div class="notice success">Registro salvo com sucesso</div>

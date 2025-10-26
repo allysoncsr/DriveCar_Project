@@ -69,6 +69,30 @@
 </style>
 
 <h2>Meus veículos</h2>
+
+<!-- Seção de Alertas -->
+{% if alertas_urgentes %}
+<section class="alertas-section">
+  <div class="alertas-header">
+    <h3 class="alertas-title">🔔 Alertas Ativos</h3>
+    <span class="alertas-count">{{ alertas_urgentes|length }}</span>
+  </div>
+  
+  <div class="alertas-grid">
+    {% for alerta in alertas_urgentes %}
+      <div class="alerta-card {{ alerta.urgencia }}">
+        <span class="alerta-icon">{{ alerta.cor }}</span>
+        <div class="alerta-content">
+          <div class="alerta-veiculo">{{ alerta.veiculo.titulo_limpo }}</div>
+          <div class="alerta-item">{{ alerta.item }}</div>
+          <div class="alerta-status {{ alerta.urgencia }}">{{ alerta.status }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 <div class="vehicle-grid">
   {% for v in veiculos %}
     <article class="vehicle-card" data-vehicle-id="{{ v.id }}" data-marca="{{ v.marca.nome }}">

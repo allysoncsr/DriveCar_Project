@@ -282,6 +282,21 @@ main { padding: 1.25rem; max-width:1100px; margin:0 auto }
     letter-spacing: 0.3px;
   }
 	.main-nav{ gap:0.4rem }
+	
+	/* Alertas responsivos */
+	.alertas-grid {
+	  grid-template-columns: 1fr;
+	}
+	
+	.alerta-card {
+	  padding: 0.6rem 0.8rem;
+	  font-size: 0.85rem;
+	}
+	
+	.alertas-veiculo {
+	  padding: 0.8rem;
+	  margin-bottom: 1rem;
+	}
 }
 .messages { list-style: none; padding: 0; }
 .message { padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; }
@@ -296,7 +311,106 @@ main { padding: 1.25rem; max-width:1100px; margin:0 auto }
 .categoria-toggle{ display:flex; justify-content:space-between; align-items:center; width:100%; padding:0.8rem 1rem; background:var(--card); border:1px solid #e6eefc; border-radius:8px; cursor:pointer; font-weight:700; color:var(--primary) }
 .categoria-toggle:hover{ background:#f7fbff }
 .categoria-title{ font-size:1rem }
-.categoria-count{ background:#eef6ff; color:var(--primary); padding:0.2rem 0.45rem; border-radius:999px; font-weight:700; font-size:0.85rem }
+.categoria-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.categoria-count{ 
+  background:#eef6ff; 
+  color:var(--primary); 
+  padding:0.2rem 0.45rem; 
+  border-radius:999px; 
+  font-weight:700; 
+  font-size:0.85rem;
+  transition: all 0.3s ease;
+}
+
+
+
+/* Estilos para categorias com alertas - baseados no tipo/severidade */
+
+/* Alerta Urgente - Vermelho */
+.categoria-count.alerta-urgente {
+  background: #ffebee !important;
+  color: #d32f2f !important;
+  border: 1px solid #ffcdd2 !important;
+  box-shadow: 0 1px 3px rgba(211, 47, 47, 0.2) !important;
+}
+
+/* Alerta de Atenção - Amarelo/Laranja */
+.categoria-count.alerta-atencao {
+  background: #fff8e1 !important;
+  color: #f57c00 !important;
+  border: 1px solid #ffcc02 !important;
+  box-shadow: 0 1px 3px rgba(245, 124, 0, 0.2) !important;
+}
+
+/* Alerta Baixo - Amarelo claro */
+.categoria-count.alerta-baixo {
+  background: #fffde7 !important;
+  color: #fbc02d !important;
+  border: 1px solid #fff176 !important;
+  box-shadow: 0 1px 3px rgba(251, 192, 45, 0.2) !important;
+}
+
+/* Indicação visual sutil na categoria com alerta */
+.categoria-com-alerta {
+  position: relative;
+}
+
+.categoria-alerta-urgente::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  border: 1px solid rgba(211, 47, 47, 0.1);
+  border-radius: 9px;
+  pointer-events: none;
+}
+
+.categoria-alerta-atencao::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  border: 1px solid rgba(245, 124, 0, 0.1);
+  border-radius: 9px;
+  pointer-events: none;
+}
+
+.categoria-alerta-baixo::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  border: 1px solid rgba(251, 192, 45, 0.1);
+  border-radius: 9px;
+  pointer-events: none;
+}
+
+.categoria-alerta-badge {
+  background: #ffebee;
+  color: #dc2626;
+  padding: 0.15rem 0.35rem;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.75rem;
+  border: 1px solid #ffcdd2;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.2);
+}
 .categoria-body.collapse{ max-height:0; overflow:hidden; transition:max-height 320ms ease; }
 .categoria-body.open{ padding:0.7rem 0.9rem; background:transparent; transition:max-height 360ms ease; }
 .categoria-body ul{ list-style:none; margin:0; padding:0.4rem 0 }
@@ -469,6 +583,181 @@ span.sino-alerta.ativo,
   .col-1, .col-2, .col-3, .col-4, .col-5, .col-6, .col-12{ grid-column: span 12 }
 }
 
+/* ========== SISTEMA DE ALERTAS ========== */
+.alertas-section {
+  margin-bottom: 2rem;
+}
+
+.alertas-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.alertas-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #07224a;
+  margin: 0;
+}
+
+.alertas-count {
+  background: #dc3545;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.alertas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 0.75rem;
+}
+
+.alerta-card {
+  background: var(--card);
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  border-left: 2px solid;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  height: 2.5rem;
+  overflow: hidden;
+  box-sizing: border-box;
+  min-width: 320px;
+}
+
+.alerta-card.urgente {
+  border-left-color: #dc3545;
+  background: linear-gradient(135deg, #fff5f5, #fefefe);
+}
+
+.alerta-card.atencao {
+  border-left-color: #ffc107;
+  background: linear-gradient(135deg, #fffbf0, #fefefe);
+}
+
+.alerta-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.alerta-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  align-self: center;
+}
+
+.alerta-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  height: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.alerta-veiculo {
+  font-weight: 600;
+  color: #07224a;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alerta-item {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alerta-status {
+  color: #666;
+  font-size: 0.82rem;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.alerta-status.urgente {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.alerta-status.atencao {
+  color: #f57c00;
+  font-weight: 500;
+}
+
+/* Alertas na página de manutenção */
+.alertas-veiculo {
+  background: var(--card);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.alertas-veiculo-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #07224a;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.alertas-veiculo-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.alerta-veiculo-item {
+  background: rgba(0,0,0,0.02);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  border-left: 2px solid;
+}
+
+.alerta-veiculo-item.urgente {
+  border-left-color: #dc3545;
+  background: rgba(220,53,69,0.05);
+}
+
+.alerta-veiculo-item.atencao {
+  border-left-color: #ffc107;
+  background: rgba(255,193,7,0.05);
+}
+
 /* Botão Admin discreto */
 .admin-btn {
   position: absolute;
@@ -610,4 +899,279 @@ input[type="number"] {
 #id_combustivel option:checked {
   background: var(--primary);
   color: white;
+}
+
+/* === CABEÇALHO DE REGISTROS (VERSÃO COMPACTA) === */
+.registro-title {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.875rem 1.125rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.registro-title-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.registro-icon {
+  font-size: 1.4rem;
+  background: linear-gradient(135deg, var(--primary), #0a58b5);
+  color: white;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 82, 163, 0.25);
+  flex-shrink: 0;
+}
+
+.registro-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.registro-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.registro-peca {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1.15;
+  word-break: break-word;
+}
+
+.registro-veiculo {
+  font-size: 0.85rem;
+  color: #4a5568;
+  background: white;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-weight: 500;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .registro-title {
+    padding: 0.75rem 1rem;
+  }
+  
+  .registro-title-main {
+    gap: 0.625rem;
+    margin-bottom: 0.4rem;
+  }
+  
+  .registro-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 1.25rem;
+  }
+  
+  .registro-peca {
+    font-size: 1rem;
+  }
+  
+  .registro-veiculo {
+    font-size: 0.8rem;
+    padding: 0.35rem 0.625rem;
+  }
+}
+
+/* === ALERTAS INTEGRADOS === */
+
+/* Bordas de alerta nas categorias */
+.categoria-com-alerta .categoria-toggle {
+  border-left: 3px solid #f59e0b;
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, transparent 10%);
+}
+
+/* Bordas de alerta nas peças */
+.peca-com-alerta {
+  position: relative;
+}
+
+.peca-com-alerta .peca-link {
+  border-left: 2px solid #f59e0b;
+  padding-left: 0.75rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.06) 0%, transparent 15%);
+}
+
+.alerta-indicator {
+  font-size: 0.875rem;
+  margin-left: 0.5rem;
+  opacity: 0.8;
+}
+
+/* Alerta integrado no cabeçalho */
+.registro-title-com-alerta {
+  position: relative;
+  background: linear-gradient(135deg, #fef7f7 0%, #fef2f2 100%) !important;
+  border-left: 3px solid #fca5a5 !important;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08), 0 1px 3px rgba(220, 38, 38, 0.12) !important;
+}
+
+.registro-alerta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.alerta-icon-mini {
+  font-size: 0.875rem;
+}
+
+.alerta-texto {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Responsivo para alertas */
+@media (max-width: 768px) {
+  .categoria-com-alerta .categoria-toggle {
+    border-left-width: 2px;
+  }
+  
+  .peca-com-alerta .peca-link {
+    padding-left: 0.5rem;
+    border-left-width: 1.5px;
+  }
+  
+  .registro-alerta {
+    gap: 0.3rem;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .alerta-texto {
+    font-size: 0.75rem;
+  }
+}
+
+/* Diminuir altura dos cards de alerta na tela principal */
+.alertas-grid .alerta-item {
+  padding: 0.75rem 1rem;
+  min-height: auto;
+}
+
+.alertas-grid .alerta-item .alerta-content {
+  gap: 0.25rem;
+}
+
+.alertas-grid .alerta-item .alerta-title {
+  font-size: 0.95rem;
+  margin-bottom: 0.2rem;
+}
+
+.alertas-grid .alerta-item .alerta-status {
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+/* === BUSCA RÁPIDA DE PEÇAS === */
+.busca-rapida {
+  margin: 1.5rem 0;
+  position: relative;
+}
+
+.busca-container {
+  position: relative;
+  max-width: 400px;
+}
+
+.busca-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: white;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.busca-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 82, 163, 0.1), 0 4px 8px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+.resultados-busca {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.resultado-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f7fafc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.15s ease;
+}
+
+.resultado-item:hover {
+  background: #f8fafc;
+  border-left: 3px solid var(--primary);
+  padding-left: 1.25rem;
+}
+
+.resultado-item:last-child {
+  border-bottom: none;
+}
+
+.resultado-nome {
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.resultado-categoria {
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: #f1f5f9;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.busca-sem-resultados {
+  padding: 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
 }

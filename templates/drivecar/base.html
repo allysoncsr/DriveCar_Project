@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- adicionar CSS do Tailwind depois -->
-  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=9">
   <!-- HTMX -->
   <script src="https://unpkg.com/htmx.org@1.10.0"></script>
   <!-- Alpine.js leve -->
@@ -45,7 +45,7 @@
   <main>
     {% block content %}{% endblock %}
   </main>
-  <script src="{% static 'js/main.js' %}?v=1"></script>
+  <script src="{% static 'js/main.js' %}?v=7"></script>
   <script>
     // Configurar HTMX para usar CSRF token automaticamente
     document.body.addEventListener('htmx:configRequest', function(evt) {
