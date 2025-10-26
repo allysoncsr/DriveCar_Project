@@ -22,6 +22,10 @@
       <nav class="main-nav">
         <a class="nav-item" href="{% url 'drivecar:cadastrar_veiculo' %}">Cadastrar veículo</a>
         <a class="nav-item" href="/admin/">Admin</a>
+        <div class="user-info">
+          <span class="welcome-text">Olá, {{ user.first_name|default:user.username }}!</span>
+          <a class="nav-item nav-logout" href="{% url 'drivecar:logout' %}">Sair</a>
+        </div>
       </nav>
     </div>
   </header>

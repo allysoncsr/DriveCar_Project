@@ -1,7 +1,9 @@
 from django.db import models
+from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 
 class Veiculo(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name=_("usuário"))
     marca = models.CharField(_("marca"), max_length=50)
     modelo = models.CharField(_("modelo"), max_length=50)
     ano = models.PositiveIntegerField(_("ano"))

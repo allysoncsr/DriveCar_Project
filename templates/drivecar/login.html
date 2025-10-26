@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  {% load static %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login - DriveCar</title>
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .login-container {
+      background: white;
+      padding: 3rem;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    
+    .logo {
+      width: 120px;
+      height: auto;
+      margin-bottom: 2rem;
+    }
+    
+    .login-title {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #2d3748;
+      margin-bottom: 0.5rem;
+    }
+    
+    .login-subtitle {
+      color: #718096;
+      margin-bottom: 2rem;
+      font-size: 1rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+      text-align: left;
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.875rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 1rem;
+    }
+    
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-login:active {
+      transform: translateY(0);
+    }
+    
+    .btn-register {
+      width: 100%;
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      color: white;
+      padding: 0.875rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-register:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(72, 187, 120, 0.3);
+    }
+    
+    .btn-register:active {
+      transform: translateY(0);
+    }
+    
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
+    }
+    
+    .modal-content {
+      background: rgba(255, 255, 255, 0.95);
+      margin: 5% auto;
+      padding: 2rem;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 450px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+      animation: modalFadeIn 0.3s ease;
+    }
+    
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .modal-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .modal-title {
+      color: #333;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+      background: linear-gradient(135deg, #48bb78, #38a169);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .modal-subtitle {
+      color: #666;
+      font-size: 0.9rem;
+      margin: 0;
+    }
+    
+    .close {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      color: #999;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    
+    .close:hover {
+      color: #333;
+    }
+    
+    .form-group-modal {
+      margin-bottom: 1rem;
+    }
+    
+    .form-label-modal {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #555;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    
+    .form-input-modal {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+    
+    .form-input-modal:focus {
+      outline: none;
+      border-color: #48bb78;
+      box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.1);
+    }
+    
+    .form-input-modal.error {
+      border-color: #e53e3e;
+      box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+    }
+    
+    .btn-submit-register {
+      width: 100%;
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      color: white;
+      padding: 0.875rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 1rem;
+    }
+    
+    .btn-submit-register:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(72, 187, 120, 0.3);
+    }
+    
+    .btn-submit-register:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .error-message {
+      color: #e53e3e;
+      font-size: 0.8rem;
+      margin-top: 0.25rem;
+      display: none;
+    }
+    
+    .success-message {
+      background: #c6f6d5;
+      color: #2f855a;
+      padding: 0.75rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      text-align: center;
+      display: none;
+    }
+    
+    .required {
+      color: #e53e3e;
+    }
+    
+    .messages {
+      margin-bottom: 1.5rem;
+    }
+    
+    .alert {
+      padding: 0.875rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    
+    .alert-error {
+      background: #fed7d7;
+      color: #c53030;
+      border: 1px solid #feb2b2;
+    }
+    
+    .alert-success {
+      background: #c6f6d5;
+      color: #2f855a;
+      border: 1px solid #9ae6b4;
+    }
+    
+    .footer-text {
+      margin-top: 2rem;
+      color: #a0aec0;
+      font-size: 0.8rem;
+    }
+
+    /* Responsividade */
+    @media (max-width: 480px) {
+      .login-container {
+        margin: 1rem;
+        padding: 2rem 1.5rem;
+      }
+      
+      .login-title {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <!-- Logo -->
+    <img src="{% static 'images/Logo_drivecar.png' %}" alt="DriveCar" class="logo"/>
+    
+    <!-- Título -->
+    <h1 class="login-title">Bem-vindo!</h1>
+    <p class="login-subtitle">Faça login para acessar o DriveCar</p>
+    
+    <!-- Mensagens -->
+    {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    
+    <!-- Formulário de Login -->
+    <form method="post">
+      {% csrf_token %}
+      
+      <div class="form-group">
+        <label class="form-label" for="username">Usuário</label>
+        <input 
+          type="text" 
+          id="username" 
+          name="username" 
+          class="form-input"
+          placeholder="Digite seu usuário"
+          required
+          autofocus>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="password">Senha</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          class="form-input"
+          placeholder="Digite sua senha"
+          required>
+      </div>
+      
+      <button type="submit" class="btn-login">
+        🚗 Entrar no DriveCar
+      </button>
+    </form>
+    
+    <!-- Botões de ação -->
+    <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
+      <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin: 0 0 15px 0;">
+        Não tem uma conta?
+      </p>
+      <button id="openRegisterModal" class="btn-register">
+        👤 Cadastrar Nova Conta
+      </button>
+    </div>
+    
+    <!-- Footer -->
+    <p class="footer-text">
+      DriveCar © 2025 - Sistema de Controle de Manutenção
+    </p>
+  </div>
+
+  <!-- Modal de Cadastro -->
+  <div id="registerModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <div class="modal-header">
+        <h2 class="modal-title">Criar Nova Conta</h2>
+        <p class="modal-subtitle">Preencha os dados para cadastrar-se</p>
+      </div>
+      
+      <div id="successMessage" class="success-message"></div>
+      
+      <form id="registerForm">
+        {% csrf_token %}
+        
+        <div class="form-group-modal">
+          <label for="register_usuario" class="form-label-modal">
+            Usuário <span class="required">*</span>
+          </label>
+          <input type="text" 
+                 id="register_usuario" 
+                 name="usuario" 
+                 class="form-input-modal" 
+                 required
+                 placeholder="Digite seu nome de usuário">
+          <div id="usuario_error" class="error-message"></div>
+        </div>
+
+        <div class="form-group-modal">
+          <label for="register_email" class="form-label-modal">
+            Email <span class="required">*</span>
+          </label>
+          <input type="email" 
+                 id="register_email" 
+                 name="email" 
+                 class="form-input-modal" 
+                 required
+                 placeholder="Digite seu email">
+          <div id="email_error" class="error-message"></div>
+        </div>
+
+        <div class="form-group-modal">
+          <label for="register_senha" class="form-label-modal">
+            Senha <span class="required">*</span>
+          </label>
+          <input type="password" 
+                 id="register_senha" 
+                 name="senha" 
+                 class="form-input-modal" 
+                 required
+                 placeholder="Digite sua senha">
+          <div id="senha_error" class="error-message"></div>
+        </div>
+
+        <div class="form-group-modal">
+          <label for="register_repetir_senha" class="form-label-modal">
+            Repetir Senha <span class="required">*</span>
+          </label>
+          <input type="password" 
+                 id="register_repetir_senha" 
+                 name="repetir_senha" 
+                 class="form-input-modal" 
+                 required
+                 placeholder="Digite a senha novamente">
+          <div id="repetir_senha_error" class="error-message"></div>
+        </div>
+
+        <button type="submit" id="submitRegister" class="btn-submit-register">
+          ✅ Criar Conta
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Modal functionality
+    const modal = document.getElementById('registerModal');
+    const openModalBtn = document.getElementById('openRegisterModal');
+    const closeModalBtn = document.querySelector('.close');
+    const registerForm = document.getElementById('registerForm');
+    
+    // Abrir modal
+    openModalBtn.onclick = function() {
+      modal.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+    
+    // Fechar modal
+    closeModalBtn.onclick = function() {
+      modal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+      clearForm();
+    }
+    
+    // Fechar modal clicando fora
+    window.onclick = function(event) {
+      if (event.target == modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        clearForm();
+      }
+    }
+    
+    // Validação em tempo real
+    const senhaInput = document.getElementById('register_senha');
+    const repetirSenhaInput = document.getElementById('register_repetir_senha');
+    const usuarioInput = document.getElementById('register_usuario');
+    const emailInput = document.getElementById('register_email');
+    
+    // Validar senhas iguais
+    function validatePasswords() {
+      const senha = senhaInput.value;
+      const repetirSenha = repetirSenhaInput.value;
+      const errorDiv = document.getElementById('repetir_senha_error');
+      
+      if (repetirSenha && senha !== repetirSenha) {
+        repetirSenhaInput.classList.add('error');
+        errorDiv.textContent = 'As senhas não coincidem';
+        errorDiv.style.display = 'block';
+        return false;
+      } else {
+        repetirSenhaInput.classList.remove('error');
+        errorDiv.style.display = 'none';
+        return true;
+      }
+    }
+    
+    // Validar tamanho da senha
+    function validatePasswordLength() {
+      const senha = senhaInput.value;
+      const errorDiv = document.getElementById('senha_error');
+      
+      if (senha && senha.length < 6) {
+        senhaInput.classList.add('error');
+        errorDiv.textContent = 'A senha deve ter pelo menos 6 caracteres';
+        errorDiv.style.display = 'block';
+        return false;
+      } else {
+        senhaInput.classList.remove('error');
+        errorDiv.style.display = 'none';
+        return true;
+      }
+    }
+    
+    // Event listeners para validação
+    senhaInput.addEventListener('input', function() {
+      validatePasswordLength();
+      if (repetirSenhaInput.value) {
+        validatePasswords();
+      }
+    });
+    
+    repetirSenhaInput.addEventListener('input', validatePasswords);
+    
+    // Submissão do formulário
+    registerForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const isPasswordLengthValid = validatePasswordLength();
+      const arePasswordsEqual = validatePasswords();
+      
+      if (!isPasswordLengthValid || !arePasswordsEqual) {
+        return;
+      }
+      
+      const formData = new FormData(registerForm);
+      const submitBtn = document.getElementById('submitRegister');
+      
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Criando conta...';
+      
+      fetch('/register/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return response.json();
+        } else {
+          throw new Error('Resposta não é JSON válido');
+        }
+      })
+      .then(data => {
+        if (data.success) {
+          document.getElementById('successMessage').textContent = data.message;
+          document.getElementById('successMessage').style.display = 'block';
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        } else {
+          // Limpar erros anteriores
+          document.querySelectorAll('.error-message').forEach(div => div.style.display = 'none');
+          document.querySelectorAll('.form-input-modal').forEach(input => input.classList.remove('error'));
+          
+          // Mostrar erros específicos
+          if (data.errors) {
+            Object.keys(data.errors).forEach(field => {
+              const errorDiv = document.getElementById(field + '_error');
+              const inputField = document.getElementById('register_' + field);
+              if (errorDiv) {
+                errorDiv.textContent = data.errors[field];
+                errorDiv.style.display = 'block';
+                if (inputField) {
+                  inputField.classList.add('error');
+                }
+              }
+            });
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Erro detalhado:', error);
+        alert('Erro ao criar conta: ' + error.message + '. Tente novamente.');
+      })
+      .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '✅ Criar Conta';
+      });
+    });
+    
+    // Limpar formulário
+    function clearForm() {
+      registerForm.reset();
+      document.querySelectorAll('.error-message').forEach(div => div.style.display = 'none');
+      document.querySelectorAll('.form-input-modal').forEach(input => input.classList.remove('error'));
+      document.getElementById('successMessage').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

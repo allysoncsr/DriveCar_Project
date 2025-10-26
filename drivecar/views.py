@@ -1,13 +1,15 @@
-from django.shortcuts import render
-
 from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib import messages
 from .models import Veiculo, RegistroManutencao, Peca
 from django import forms
 from django.urls import reverse
 from django.http import HttpResponse
-from django import forms
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 import json
 
 # Formulários simples em português
@@ -31,8 +33,9 @@ class RegistroForm(forms.ModelForm):
         }
 
 
+@login_required
 def manutencao(request, veiculo_id):
-    veiculo = get_object_or_404(Veiculo, id=veiculo_id)
+    veiculo = get_object_or_404(Veiculo, id=veiculo_id, usuario=request.user)
     # agrupar peças por categoria para exibição
     pecas = Peca.objects.all().order_by("categoria", "nome")
     categorias = {}
@@ -41,8 +44,9 @@ def manutencao(request, veiculo_id):
     return render(request, "drivecar/manutencao.html", {"veiculo": veiculo, "categorias": categorias})
 
 
+@login_required
 def registros_peca(request, veiculo_id, peca_id):
-    veiculo = get_object_or_404(Veiculo, id=veiculo_id)
+    veiculo = get_object_or_404(Veiculo, id=veiculo_id, usuario=request.user)
     peca = get_object_or_404(Peca, id=peca_id)
     saved = False
     if request.method == "POST":
@@ -112,6 +116,7 @@ def registros_peca(request, veiculo_id, peca_id):
 
 
 @csrf_exempt
+@login_required
 def api_registro_create(request, veiculo_id, peca_id):
     """API simples para criar um RegistroManutencao via JSON POST.
     Espera JSON com chaves: data (YYYY-MM-DD), km (int), preco (decimal), troca (bool), garantia_meses (int|null), observacoes (string)
@@ -124,7 +129,7 @@ def api_registro_create(request, veiculo_id, peca_id):
     except Exception as e:
         return HttpResponseBadRequest(f'JSON inválido: {e}')
 
-    veiculo = get_object_or_404(Veiculo, id=veiculo_id)
+    veiculo = get_object_or_404(Veiculo, id=veiculo_id, usuario=request.user)
     peca = get_object_or_404(Peca, id=peca_id)
 
     # mapear campos
@@ -164,15 +169,21 @@ def api_registro_create(request, veiculo_id, peca_id):
 
     return JsonResponse({'success': True, 'id': reg.id})
 
+@login_required
 def index(request):
-    veiculos = Veiculo.objects.all()
+    # Filtrar apenas os veículos do usuário logado
+    veiculos = Veiculo.objects.filter(usuario=request.user)
     return render(request, "drivecar/index.html", {"veiculos": veiculos})
 
+@login_required
 def cadastrar_veiculo(request):
     if request.method == "POST":
         form = VeiculoForm(request.POST)
         if form.is_valid():
-            form.save()
+            # Associar o veículo ao usuário logado antes de salvar
+            veiculo = form.save(commit=False)
+            veiculo.usuario = request.user
+            veiculo.save()
             # Se a requisição vier via HTMX, retorne um HX-Redirect header
             if request.headers.get("HX-Request") == "true":
                 resp = HttpResponse()
@@ -185,18 +196,21 @@ def cadastrar_veiculo(request):
 
 
 
+@login_required
 def registros_veiculo(request, veiculo_id):
-    veiculo = get_object_or_404(Veiculo, id=veiculo_id)
+    # Garantir que o usuário só acesse seus próprios veículos
+    veiculo = get_object_or_404(Veiculo, id=veiculo_id, usuario=request.user)
     registros = RegistroManutencao.objects.filter(veiculo=veiculo).select_related("peca").order_by("-data")
     # este template pode ser retornado como fragmento HTMX
     return render(request, "drivecar/registros_fragment.html", {"veiculo": veiculo, "registros": registros})
 
 
 
+@login_required
 def excluir_veiculo(request, veiculo_id):
     """Exclui um veículo e todos os seus registros associados"""
     if request.method == "POST":
-        veiculo = get_object_or_404(Veiculo, id=veiculo_id)
+        veiculo = get_object_or_404(Veiculo, id=veiculo_id, usuario=request.user)
         # Os registros serão excluídos automaticamente devido ao CASCADE no modelo
         veiculo.delete()
         
@@ -208,14 +222,15 @@ def excluir_veiculo(request, veiculo_id):
         return redirect("drivecar:index")
     else:
         # GET request - página de confirmação
-        veiculo = get_object_or_404(Veiculo, id=veiculo_id)
+        veiculo = get_object_or_404(Veiculo, id=veiculo_id, usuario=request.user)
         return render(request, "drivecar/confirmar_exclusao.html", {"veiculo": veiculo})
 
+@login_required
 def excluir_registro(request, veiculo_id, peca_id, registro_id):
     """Exclui um registro de manutenção específico - Exclusão Direta"""
     if request.method == "POST":
         try:
-            veiculo = get_object_or_404(Veiculo, id=veiculo_id)
+            veiculo = get_object_or_404(Veiculo, id=veiculo_id, usuario=request.user)
             peca = get_object_or_404(Peca, id=peca_id)
             registro = get_object_or_404(RegistroManutencao, id=registro_id, veiculo=veiculo, peca=peca)
             
@@ -254,4 +269,141 @@ def excluir_registro(request, veiculo_id, peca_id, registro_id):
     return HttpResponseBadRequest("❌ Método não permitido")
 
 
+# =================================== 
+# VIEWS DE AUTENTICAÇÃO
+# ===================================
+
+def login_view(request):
+    """View de login personalizada"""
+    if request.user.is_authenticated:
+        return redirect('drivecar:index')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        if username and password:
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                # Mensagem será mostrada na página principal, não aqui
+                return redirect('drivecar:index')
+            else:
+                messages.error(request, 'Usuário ou senha incorretos.')
+        else:
+            messages.error(request, 'Por favor, preencha todos os campos.')
+    
+    return render(request, 'drivecar/login.html')
+
+
+def logout_view(request):
+    """View de logout"""
+    user_name = request.user.first_name or request.user.username
+    logout(request)
+    messages.success(request, f'Até logo, {user_name}!')
+    return redirect('drivecar:login')
+
+
+def register_view(request):
+    """View de cadastro de usuário"""
+    if request.user.is_authenticated:
+        return redirect('drivecar:index')
+    
+    if request.method == 'POST':
+        # Verificar se é uma requisição AJAX (do modal)
+        is_ajax = (request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+                  'application/json' in request.headers.get('Accept', ''))
+        
+        if is_ajax:
+            # Processar dados do modal
+            usuario = request.POST.get('usuario')
+            email = request.POST.get('email')
+            senha = request.POST.get('senha')
+            repetir_senha = request.POST.get('repetir_senha')
+            
+            errors = {}
+            
+            # Validações AJAX
+            if not usuario:
+                errors['usuario'] = 'Campo obrigatório'
+            elif User.objects.filter(username=usuario).exists():
+                errors['usuario'] = 'Este usuário já existe'
+            
+            if not email:
+                errors['email'] = 'Campo obrigatório'
+            elif User.objects.filter(email=email).exists():
+                errors['email'] = 'Este email já está cadastrado'
+            
+            if not senha:
+                errors['senha'] = 'Campo obrigatório'
+            elif len(senha) < 6:
+                errors['senha'] = 'A senha deve ter pelo menos 6 caracteres'
+            
+            if not repetir_senha:
+                errors['repetir_senha'] = 'Campo obrigatório'
+            elif senha != repetir_senha:
+                errors['repetir_senha'] = 'As senhas não coincidem'
+            
+            if errors:
+                return JsonResponse({
+                    'success': False,
+                    'errors': errors
+                })
+            
+            # Criar usuário
+            try:
+                user = User.objects.create_user(
+                    username=usuario,
+                    email=email,
+                    password=senha,
+                    first_name=usuario
+                )
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Conta criada com sucesso! Você será redirecionado para fazer login.'
+                })
+                
+            except Exception as e:
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'general': f'Erro ao criar conta: {str(e)}'}
+                })
+        
+        else:
+            # Processar dados da página normal
+            username = request.POST.get('username')
+            password = request.POST.get('password')
+            password_confirm = request.POST.get('password_confirm')
+            first_name = request.POST.get('first_name')
+            email = request.POST.get('email')
+            
+            # Validações normais
+            if not all([username, password, password_confirm, first_name]):
+                messages.error(request, 'Por favor, preencha todos os campos obrigatórios.')
+            elif password != password_confirm:
+                messages.error(request, 'As senhas não coincidem.')
+            elif len(password) < 6:
+                messages.error(request, 'A senha deve ter pelo menos 6 caracteres.')
+            elif User.objects.filter(username=username).exists():
+                messages.error(request, 'Este nome de usuário já está em uso.')
+            elif email and User.objects.filter(email=email).exists():
+                messages.error(request, 'Este email já está cadastrado.')
+            else:
+                # Criar usuário
+                try:
+                    user = User.objects.create_user(
+                        username=username,
+                        password=password,
+                        first_name=first_name,
+                        email=email
+                    )
+                    messages.success(request, f'Conta criada com sucesso! Bem-vindo, {first_name}!')
+                    # Fazer login automático após cadastro
+                    login(request, user)
+                    return redirect('drivecar:index')
+                except Exception as e:
+                    messages.error(request, 'Erro ao criar conta. Tente novamente.')
+    
+    return render(request, 'drivecar/register.html')
 
