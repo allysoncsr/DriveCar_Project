@@ -21,7 +21,13 @@
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="{% url 'drivecar:index' %}">
-        <img src="{% static 'images/Logo_drivecar.png' %}" alt="DriveCar" class="logo"/>
+        <div class="brand-container">
+          <img src="{% static 'images/Logo_drivecar.png' %}" alt="DriveCar" class="logo"/>
+          <div class="brand-tagline">
+            <span class="tagline-text">Sua oficina digital</span>
+            <div class="tagline-accent"></div>
+          </div>
+        </div>
       </a>
       <nav class="main-nav">
         <a class="nav-item" href="{% url 'drivecar:cadastrar_veiculo' %}">Cadastrar veículo</a>

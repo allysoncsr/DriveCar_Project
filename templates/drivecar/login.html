@@ -326,27 +326,123 @@
       color: #e53e3e;
     }
     
+    /* Sistema de Notificação Sanfona */
+    .notification-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      max-width: 400px;
+      min-width: 300px;
+    }
+    
+    .sanfona-notification {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0;
+      margin-bottom: 10px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .sanfona-notification.show {
+      max-height: 120px;
+      opacity: 1;
+      transform: translateX(0);
+    }
+    
+    .sanfona-notification.hide {
+      max-height: 0;
+      opacity: 0;
+      transform: translateX(100%);
+      margin-bottom: 0;
+    }
+    
+    .notification-content {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    
+    .notification-icon {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    
+    .notification-text {
+      flex: 1;
+    }
+    
+    .notification-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0;
+      margin-left: 12px;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+    
+    .notification-close:hover {
+      opacity: 1;
+    }
+    
+    /* Diferentes tipos de notificação */
+    .sanfona-notification.success {
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    }
+    
+    .sanfona-notification.error {
+      background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    }
+    
+    .sanfona-notification.warning {
+      background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+    }
+    
+    .sanfona-notification.info {
+      background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    }
+    
+    /* Animação de progresso */
+    .notification-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.3);
+      width: 100%;
+      transform-origin: left;
+      animation: progressBar 4s linear forwards;
+    }
+    
+    @keyframes progressBar {
+      from { transform: scaleX(1); }
+      to { transform: scaleX(0); }
+    }
+    
+    /* Mantém compatibilidade com mensagens antigas */
     .messages {
-      margin-bottom: 1.5rem;
+      display: none;
     }
     
     .alert {
-      padding: 0.875rem 1rem;
-      border-radius: 10px;
-      margin-bottom: 1rem;
-      font-size: 0.9rem;
-    }
-    
-    .alert-error {
-      background: #fed7d7;
-      color: #c53030;
-      border: 1px solid #feb2b2;
-    }
-    
-    .alert-success {
-      background: #c6f6d5;
-      color: #2f855a;
-      border: 1px solid #9ae6b4;
+      display: none;
     }
     
     .footer-text {
@@ -365,6 +461,30 @@
       .login-title {
         font-size: 1.5rem;
       }
+      
+      /* Notificações responsivas */
+      .notification-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        min-width: auto;
+      }
+      
+      .sanfona-notification {
+        margin-bottom: 8px;
+      }
+      
+      .notification-content {
+        padding: 12px 16px;
+        font-size: 13px;
+      }
+      
+      .notification-icon {
+        width: 18px;
+        height: 18px;
+        margin-right: 10px;
+      }
     }
   </style>
 </head>
@@ -376,13 +496,16 @@
     <!-- Título -->
     <h1 class="login-title">Bem-vindo!</h1>
     
-    <!-- Mensagens -->
+    <!-- Sistema de Notificação Sanfona -->
+    <div class="notification-container" id="notificationContainer">
+      <!-- Notificações serão criadas dinamicamente pelo JavaScript -->
+    </div>
+    
+    <!-- Mensagens do Django (processadas pelo JavaScript) -->
     {% if messages %}
-      <div class="messages">
+      <div id="django-messages" style="display: none;">
         {% for message in messages %}
-          <div class="alert alert-{{ message.tags }}">
-            {{ message }}
-          </div>
+          <div data-type="{{ message.tags }}" data-message="{{ message|escape }}"></div>
         {% endfor %}
       </div>
     {% endif %}
@@ -622,11 +745,20 @@
       })
       .then(data => {
         if (data.success) {
-          document.getElementById('successMessage').textContent = data.message;
-          document.getElementById('successMessage').style.display = 'block';
+          // Usar o sistema sanfona para sucesso
+          if (window.sanfonaNotifications) {
+            window.sanfonaNotifications.notify(data.message || 'Conta criada com sucesso!', 'success');
+          }
+          
+          // Fechar modal após sucesso
+          modal.style.display = 'none';
+          document.body.style.overflow = 'auto';
+          clearForm();
+          
+          // Reload após mostrar notificação
           setTimeout(() => {
             window.location.reload();
-          }, 2000);
+          }, 2500);
         } else {
           // Limpar erros anteriores
           document.querySelectorAll('.error-message').forEach(div => div.style.display = 'none');
@@ -650,7 +782,13 @@
       })
       .catch(error => {
         console.error('Erro detalhado:', error);
-        alert('Erro ao criar conta: ' + error.message + '. Tente novamente.');
+        
+        // Usar sistema sanfona para erros
+        if (window.sanfonaNotifications) {
+          window.sanfonaNotifications.notify('Erro ao criar conta: ' + error.message, 'error');
+        } else {
+          alert('Erro ao criar conta: ' + error.message + '. Tente novamente.');
+        }
       })
       .finally(() => {
         submitBtn.disabled = false;
@@ -665,6 +803,147 @@
       document.querySelectorAll('.form-input-modal').forEach(input => input.classList.remove('error'));
       document.getElementById('successMessage').style.display = 'none';
     }
+
+    // ========== SISTEMA DE NOTIFICAÇÃO SANFONA ==========
+    class SanfonaNotificationSystem {
+      constructor() {
+        this.container = document.getElementById('notificationContainer');
+        this.activeNotifications = new Set();
+        this.notificationQueue = [];
+        this.isProcessing = false;
+        this.init();
+      }
+
+      init() {
+        // Processar mensagens do Django no carregamento da página
+        this.processDjangoMessages();
+        
+        // Configurar eventos globais para capturar novas mensagens
+        this.setupGlobalEvents();
+      }
+
+      processDjangoMessages() {
+        const djangoMessages = document.getElementById('django-messages');
+        if (djangoMessages) {
+          const messages = djangoMessages.querySelectorAll('[data-message]');
+          messages.forEach(msgElement => {
+            const type = msgElement.getAttribute('data-type') || 'info';
+            const message = msgElement.getAttribute('data-message');
+            if (message && !this.activeNotifications.has(message)) {
+              this.addNotification(message, type);
+            }
+          });
+        }
+      }
+
+      setupGlobalEvents() {
+        // Interceptar mensagens de sucesso do registro
+        const originalConsoleLog = console.log;
+        console.log = (...args) => {
+          const message = args.join(' ');
+          if (message.includes('sucesso') || message.includes('criado')) {
+            this.addNotification(message, 'success');
+          }
+          originalConsoleLog.apply(console, args);
+        };
+      }
+
+      addNotification(message, type = 'info') {
+        // Evitar duplicatas
+        if (this.activeNotifications.has(message)) {
+          return;
+        }
+
+        this.activeNotifications.add(message);
+        
+        // Adicionar à fila se já estiver processando
+        if (this.isProcessing) {
+          this.notificationQueue.push({ message, type });
+          return;
+        }
+
+        this.showNotification(message, type);
+      }
+
+      showNotification(message, type) {
+        this.isProcessing = true;
+
+        // Criar elemento da notificação
+        const notification = document.createElement('div');
+        notification.className = `sanfona-notification ${type}`;
+        
+        // Escolher ícone baseado no tipo
+        const icons = {
+          success: '✅',
+          error: '❌',
+          warning: '⚠️',
+          info: 'ℹ️'
+        };
+
+        notification.innerHTML = `
+          <div class="notification-content">
+            <span class="notification-icon">${icons[type] || icons.info}</span>
+            <span class="notification-text">${message}</span>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove();">×</button>
+          </div>
+          <div class="notification-progress"></div>
+        `;
+
+        // Adicionar ao container
+        this.container.appendChild(notification);
+
+        // Efeito sanfona - aparecer
+        setTimeout(() => {
+          notification.classList.add('show');
+        }, 100);
+
+        // Auto-remover após 4 segundos
+        setTimeout(() => {
+          this.hideNotification(notification, message);
+        }, 4000);
+      }
+
+      hideNotification(notification, message) {
+        // Efeito sanfona - desaparecer
+        notification.classList.add('hide');
+        notification.classList.remove('show');
+
+        // Remover do DOM após animação
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+          
+          // Remover do conjunto de notificações ativas
+          this.activeNotifications.delete(message);
+          
+          // Processar próxima da fila
+          this.processQueue();
+        }, 500);
+      }
+
+      processQueue() {
+        if (this.notificationQueue.length > 0) {
+          const next = this.notificationQueue.shift();
+          setTimeout(() => {
+            this.showNotification(next.message, next.type);
+          }, 200); // Pequeno delay entre notificações
+        } else {
+          this.isProcessing = false;
+        }
+      }
+
+      // Método público para adicionar notificações via JavaScript
+      notify(message, type = 'info') {
+        this.addNotification(message, type);
+      }
+    }
+
+    // Inicializar sistema quando DOM estiver pronto
+    document.addEventListener('DOMContentLoaded', function() {
+      window.sanfonaNotifications = new SanfonaNotificationSystem();
+    });
+
   </script>
 </body>
 </html>

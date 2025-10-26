@@ -133,7 +133,7 @@ setTimeout(function() {
   if (!form) return;
   
   // ===== FORMATAÇÃO DO CAMPO KM =====
-  var kmField = form.querySelector('input[name$="km"]');
+  var kmField = form.querySelector('input[name="km"]');
   if (kmField) {
     kmField.type = 'text';
     kmField.placeholder = 'Ex: 123.456,789';
@@ -184,7 +184,7 @@ setTimeout(function() {
   }
   
   // ===== FORMATAÇÃO DO CAMPO PREÇO =====
-  var precoField = form.querySelector('input[name$="preco"]');
+  var precoField = form.querySelector('input[name="preco"]');
   if (precoField) {
     precoField.type = 'text';
     precoField.placeholder = 'R$ 0,00';

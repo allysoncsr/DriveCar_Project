@@ -44,63 +44,75 @@ def manutencao(request, veiculo_id):
     return render(request, "drivecar/manutencao.html", {"veiculo": veiculo, "categorias": categorias})
 
 
-@login_required
+@login_required  
 def registros_peca(request, veiculo_id, peca_id):
     veiculo = get_object_or_404(Veiculo, id=veiculo_id, usuario=request.user)
     peca = get_object_or_404(Peca, id=peca_id)
     saved = False
     if request.method == "POST":
+        print(f"[DEBUG] ===== INICIANDO PROCESSAMENTO =====")
+        print(f"[DEBUG] POST original: {dict(request.POST)}")
+        
         # Processar dados formatados antes de criar o form
         post_data = request.POST.copy()
         
         # Processar KM formatado (ex: "123,456" -> 123.456)
         if 'km' in post_data:
             km_valor = post_data['km']
+            print(f"[DEBUG] KM original: '{km_valor}'")
             if km_valor:
                 try:
-                    # Remove R$ e converte vírgula para ponto
-                    km_numerico = km_valor.replace('R$', '').replace(' ', '').replace(',', '.')
-                    post_data['km'] = str(float(km_numerico))
+                    # Remove pontos e vírgulas e converte para número
+                    km_limpo = km_valor.replace('.', '').replace(',', '.')
+                    km_float = float(km_limpo)
+                    post_data['km'] = str(int(km_float))  # KM deve ser inteiro
                     print(f"[DEBUG] KM convertido: '{km_valor}' -> '{post_data['km']}'")
-                except ValueError:
-                    print(f"[DEBUG] Erro ao converter KM: {km_valor}")
+                except ValueError as e:
+                    print(f"[DEBUG] Erro ao converter KM: {km_valor} - {e}")
         
         # Processar Preço formatado (ex: "R$ 1.234,56" -> 1234.56)
         if 'preco' in post_data:
             preco_valor = post_data['preco']
+            print(f"[DEBUG] Preço original: '{preco_valor}'")
             if preco_valor:
                 try:
-                    # Remove R$, espaços e pontos (milhares), converte vírgula para ponto
-                    preco_numerico = preco_valor.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
-                    # Se tem apenas vírgula, é decimal brasileiro
-                    if ',' in preco_valor and '.' not in preco_valor.replace('R$', '').replace(' ', ''):
-                        preco_numerico = preco_valor.replace('R$', '').replace(' ', '').replace(',', '.')
-                    post_data['preco'] = str(float(preco_numerico))
+                    # Limpar e converter preço
+                    preco_limpo = preco_valor.replace('R$', '').replace(' ', '').strip()
+                    
+                    # Se tem formato brasileiro (pontos para milhares, vírgula para decimal)
+                    if ',' in preco_limpo:
+                        if '.' in preco_limpo:
+                            # Formato: 1.234,56 (brasileiro)
+                            preco_limpo = preco_limpo.replace('.', '').replace(',', '.')
+                        else:
+                            # Formato: 1234,56 (vírgula apenas para decimal)
+                            preco_limpo = preco_limpo.replace(',', '.')
+                    # Se só tem ponto, assumir decimal americano (1234.56)
+                    
+                    preco_float = float(preco_limpo)
+                    post_data['preco'] = str(preco_float)
                     print(f"[DEBUG] Preço convertido: '{preco_valor}' -> '{post_data['preco']}'")
-                except ValueError:
-                    print(f"[DEBUG] Erro ao converter preço: {preco_valor}")
+                except ValueError as e:
+                    print(f"[DEBUG] Erro ao converter preço: {preco_valor} - {e}")
+        
+        print(f"[DEBUG] Dados finais para formulário: {dict(post_data)}")
         
         form = RegistroForm(post_data)
-        # debug: log POST attempts to help troubleshooting local dev
-        try:
-            print(f"[DEBUG] registros_peca POST veiculo={veiculo_id} peca={peca_id} data_keys={list(request.POST.keys())}")
-            print(f"[DEBUG] Dados processados: km={post_data.get('km')}, preco={post_data.get('preco')}")
-        except Exception:
-            pass
+        print(f"[DEBUG] Formulário criado. Validando...")
+        
         if form.is_valid():
+            print(f"[DEBUG] Formulário VÁLIDO. Salvando...")
             reg = form.save(commit=False)
             reg.veiculo = veiculo
             reg.peca = peca
             reg.save()
             saved = True
+            print(f"[DEBUG] Registro salvo com ID: {reg.id}, Preço: {reg.preco}")
             # após salvar, limpar o formulário para que o fragmento retornado mostre campos vazios
             form = RegistroForm()
         else:
-            # debug: mostrar erros do form no terminal
-            try:
-                print('[DEBUG] registro form errors:', form.errors)
-            except Exception:
-                pass
+            print(f'[DEBUG] Formulário INVÁLIDO. Erros: {form.errors}')
+            print(f'[DEBUG] Dados limpos do form: {form.cleaned_data if hasattr(form, "cleaned_data") else "N/A"}')
     else:
         form = RegistroForm()
 

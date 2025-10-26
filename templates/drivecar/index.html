@@ -2,15 +2,86 @@
 {% load humanize %}
 {% block title %}Meus Veículos{% endblock %}
 {% block content %}
+<style>
+/* ========== EFEITO MINIMALISTA DE CONTORNO PARA NOVO VEÍCULO ========== */
+.vehicle-card {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* Contorno animado para veículo recém-cadastrado */
+.vehicle-card.new-vehicle-highlight {
+  position: relative;
+}
+
+.vehicle-card.new-vehicle-highlight::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  border: 1px solid #48bb78;
+  border-radius: inherit;
+  z-index: 1;
+  pointer-events: none;
+  
+  /* Animação do contorno */
+  animation: newVehicleBorder 3s ease-out forwards;
+}
+
+@keyframes newVehicleBorder {
+  0% {
+    border-color: transparent;
+    box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.7);
+  }
+  10% {
+    border-color: #48bb78;
+    box-shadow: 0 0 0 4px rgba(72, 187, 120, 0.3);
+  }
+  50% {
+    border-color: #48bb78;
+    box-shadow: 0 0 0 8px rgba(72, 187, 120, 0.2);
+  }
+  90% {
+    border-color: #48bb78;
+    box-shadow: 0 0 0 0 rgba(72, 187, 120, 0);
+  }
+  100% {
+    border-color: transparent;
+    box-shadow: 0 0 0 0 rgba(72, 187, 120, 0);
+  }
+}
+
+/* Remove o efeito após a animação */
+.vehicle-card.new-vehicle-highlight.fade-out::before {
+  animation: fadeOutBorder 0.5s ease-out forwards;
+}
+
+@keyframes fadeOutBorder {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+</style>
+
 <h2>Meus veículos</h2>
 <div class="vehicle-grid">
   {% for v in veiculos %}
-    <article class="vehicle-card">
+    <article class="vehicle-card" data-vehicle-id="{{ v.id }}" data-marca="{{ v.marca.nome }}">
       <a class="vehicle-link" href="{% url 'drivecar:manutencao' v.id %}">
-        <div class="vehicle-title">{{ v.titulo_limpo }}</div>
-        <div class="vehicle-meta">{{ v.ano }} • {{ v.km_atual|intcomma }} km</div>
-        <div class="vehicle-maintenance-cost">
-          💰 Total gasto: <strong>{{ v.total_gasto_manutencao_formatado }}</strong>
+        <div class="vehicle-header">
+          <div class="vehicle-title">{{ v.titulo_limpo }}</div>
+        </div>
+        <div class="vehicle-footer">
+          <div class="vehicle-meta">{{ v.ano }} • {{ v.km_atual|intcomma }} km</div>
+          <div class="vehicle-maintenance-cost">
+            <span class="cost-label">💰 Total gasto:</span>
+            <strong class="cost-value">{{ v.total_gasto_manutencao_formatado }}</strong>
+          </div>
         </div>
       </a>
       <a href="{% url 'drivecar:excluir_veiculo' v.id %}" class="delete-btn" title="Excluir veículo" onclick="return confirm('Tem certeza que deseja excluir este veículo?')">
@@ -23,4 +94,117 @@
     <p>Nenhum veículo cadastrado.</p>
   {% endfor %}
 </div>
+
+<!-- Mensagens do Django (processadas pelo JavaScript) -->
+{% if messages %}
+  <div id="django-messages" style="display: none;">
+    {% for message in messages %}
+      <div data-type="{{ message.tags }}" data-message="{{ message|escape }}"></div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<script>
+// ========== SISTEMA MINIMALISTA DE CONTORNO PARA NOVO VEÍCULO ==========
+class NewVehicleBorderEffect {
+  constructor() {
+    this.processedMessages = new Set();
+    this.init();
+  }
+
+  init() {
+    // Processar mensagens do Django no carregamento da página
+    this.processDjangoMessages();
+  }
+
+  processDjangoMessages() {
+    const djangoMessages = document.getElementById('django-messages');
+    if (djangoMessages) {
+      const messages = djangoMessages.querySelectorAll('[data-message]');
+      messages.forEach(msgElement => {
+        const type = msgElement.getAttribute('data-type') || 'info';
+        const message = msgElement.getAttribute('data-message');
+        
+        // Verificar se é uma mensagem de cadastro de veículo
+        if (message && message.includes('cadastrado com sucesso') && type === 'success') {
+          this.showNewVehicleEffect(message);
+        }
+      });
+    }
+  }
+
+  showNewVehicleEffect(message) {
+    // Extrair nome da marca da mensagem
+    const marcaMatch = message.match(/Veículo\s+([^0-9]+)/i);
+    if (!marcaMatch) return;
+    
+    const marcaNome = marcaMatch[1].trim().split(' ')[0]; // Pegar apenas a primeira palavra (marca)
+    
+    // Encontrar o card do veículo mais recente dessa marca
+    const vehicleCards = document.querySelectorAll('.vehicle-card[data-marca]');
+    let targetCard = null;
+    
+    // Procurar o card mais recente da marca (último no DOM)
+    for (let i = vehicleCards.length - 1; i >= 0; i--) {
+      const card = vehicleCards[i];
+      const cardMarca = card.getAttribute('data-marca');
+      if (cardMarca && cardMarca.toLowerCase().includes(marcaNome.toLowerCase())) {
+        targetCard = card;
+        break;
+      }
+    }
+    
+    if (!targetCard) {
+      // Se não encontrar por marca, usar o último card (mais recente)
+      targetCard = vehicleCards[vehicleCards.length - 1];
+    }
+    
+    if (targetCard) {
+      this.animateBorderEffect(targetCard);
+    }
+  }
+
+  animateBorderEffect(card) {
+    // Adicionar classe de efeito de contorno
+    card.classList.add('new-vehicle-highlight');
+    
+    // Remover o efeito após 3 segundos
+    setTimeout(() => {
+      card.classList.add('fade-out');
+      
+      // Remover todas as classes após fade out
+      setTimeout(() => {
+        card.classList.remove('new-vehicle-highlight', 'fade-out');
+      }, 500);
+    }, 3000);
+  }
+
+  // Método público para mostrar efeito manualmente
+  showEffect(marca, vehicleId = null) {
+    let targetCard;
+    
+    if (vehicleId) {
+      targetCard = document.querySelector(`.vehicle-card[data-vehicle-id="${vehicleId}"]`);
+    } else {
+      // Procurar por marca
+      const cards = document.querySelectorAll('.vehicle-card[data-marca]');
+      for (let card of cards) {
+        if (card.getAttribute('data-marca').toLowerCase().includes(marca.toLowerCase())) {
+          targetCard = card;
+          break;
+        }
+      }
+    }
+    
+    if (targetCard) {
+      this.animateBorderEffect(targetCard);
+    }
+  }
+}
+
+// Inicializar sistema quando DOM estiver pronto
+document.addEventListener('DOMContentLoaded', function() {
+  window.newVehicleBorder = new NewVehicleBorderEffect();
+});
+</script>
 {% endblock %}
