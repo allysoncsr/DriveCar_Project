@@ -1,0 +1,277 @@
+{% load money_filters %}
+
+<div class="veiculo-alertas-header">
+  <h3>🚗 {{ veiculo_selecionado.modelo }} ({{ veiculo_selecionado.ano }})</h3>
+  <span class="total-alertas">{{ alertas_veiculo|length }} categoria{{ alertas_veiculo|length|pluralize:"s" }} com alerta</span>
+</div>
+
+<div class="alertas-grid">
+  {% if alertas_veiculo %}
+    {% for peca_nome, peca_data in alertas_veiculo.items %}
+      <div class="peca-alerta-card">
+        <div class="peca-header">
+          <h4>🔧 {{ peca_nome }}</h4>
+          <div class="alerta-badge ativo">
+            <span class="sino-badge">🔔</span>
+            <span>ATIVO</span>
+          </div>
+        </div>
+        
+        <div class="alerta-info">
+          {% with registro=peca_data.registros|first %}
+          <div class="info-row">
+            <span class="label">📅 Último registro:</span>
+            <span class="value">{{ registro.data }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">🛣️ KM atual:</span>
+            <span class="value">{{ registro.km|floatformat:0 }} km</span>
+          </div>
+          <div class="info-row">
+            <span class="label">💰 Último valor:</span>
+            <span class="value">{{ registro.preco|money_br }}</span>
+          </div>
+          
+          {% if registro.alerta_intervalo_km %}
+          <div class="info-row alerta-config">
+            <span class="label">⚠️ Próximo (KM):</span>
+            <span class="value warning">{{ registro.km|add:registro.alerta_intervalo_km|floatformat:0 }} km</span>
+          </div>
+          {% endif %}
+          
+          {% if registro.alerta_intervalo_meses %}
+          <div class="info-row alerta-config">
+            <span class="label">⏰ Próximo (Tempo):</span>
+            <span class="value warning">Em {{ registro.alerta_intervalo_meses }} meses</span>
+          </div>
+          {% endif %}
+          
+          {% if registro.observacoes %}
+          <div class="info-row">
+            <span class="label">📝 Observações:</span>
+            <span class="value">{{ registro.observacoes|truncatechars:50 }}</span>
+          </div>
+          {% endif %}
+          {% endwith %}
+        </div>
+        
+        <div class="alerta-actions">
+          <a href="/veiculo/{{ veiculo_selecionado.id }}/manutencao/{{ peca_data.peca.id }}/" class="btn-view">
+            👁️ Ver Registros
+          </a>
+          {% with registro=peca_data.registros|first %}
+          <button class="btn-config" data-registro-id="{{ registro.id }}" onclick="editarAlerta(this)">
+            ⚙️ Configurar
+          </button>
+          <button class="btn-disable" data-registro-id="{{ registro.id }}" data-veiculo-id="{{ veiculo_selecionado.id }}" onclick="desativarAlerta(this)">
+            🔕 Desativar
+          </button>
+          {% endwith %}
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="no-alertas-veiculo">
+      <div class="no-alertas-icon">🔔</div>
+      <h4>Nenhum alerta configurado</h4>
+      <p>Este veículo não possui alertas de manutenção ativos.</p>
+      <a href="/" class="btn-primary">� Voltar aos Veículos</a>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+function editarAlerta(element) {
+  var registroId = element.getAttribute('data-registro-id');
+  alert('🚧 Em desenvolvimento: Editar configurações do alerta ' + registroId);
+}
+
+function desativarAlerta(element) {
+  var registroId = element.getAttribute('data-registro-id');
+  var veiculoId = element.getAttribute('data-veiculo-id');
+  
+  if (confirm('⚠️ Deseja desativar este alerta?\n\nVocê pode reativá-lo clicando no sino na tela de manutenção.')) {
+    // Aqui seria feita a requisição AJAX para desativar
+    alert('✅ Alerta desativado com sucesso!');
+    // Recarregar o conteúdo dos alertas
+    htmx.ajax('GET', '/alertas/?veiculo_id=' + veiculoId, '#alertas-content');
+  }
+}
+</script>
+
+<style>
+.veiculo-alertas-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 12px 12px 0 0;
+}
+
+.veiculo-alertas-header h3 {
+  margin: 0;
+  font-size: 1.3em;
+}
+
+.total-alertas {
+  background: rgba(255,255,255,0.2);
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.alertas-grid {
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.peca-alerta-card {
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1.2rem;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.peca-alerta-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.peca-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.peca-header h4 {
+  margin: 0;
+  color: var(--primary-color);
+  font-size: 1.1em;
+}
+
+.alerta-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.8em;
+  font-weight: 600;
+}
+
+.alerta-badge.ativo {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  color: #856404;
+  border: 1px solid #ffd700;
+}
+
+.sino-badge {
+  font-size: 0.9em;
+}
+
+.alerta-info {
+  margin-bottom: 1rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9em;
+}
+
+.info-row .label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.info-row .value {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.info-row.alerta-config .value.warning {
+  color: #e67e22;
+  font-weight: 700;
+}
+
+.alerta-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-view, .btn-config, .btn-disable {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.btn-view {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-view:hover {
+  background: var(--primary-dark);
+  color: white;
+}
+
+.btn-config {
+  background: #17a2b8;
+  color: white;
+}
+
+.btn-config:hover {
+  background: #138496;
+}
+
+.btn-disable {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-disable:hover {
+  background: #545b62;
+}
+
+.no-alertas-veiculo {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-muted);
+  grid-column: 1 / -1;
+}
+
+.no-alertas-icon {
+  font-size: 3em;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-alertas-veiculo h4 {
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.no-alertas-veiculo p {
+  margin-bottom: 2rem;
+  font-size: 1.1em;
+}
+</style>

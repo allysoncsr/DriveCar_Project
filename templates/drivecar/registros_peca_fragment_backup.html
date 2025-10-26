@@ -1,0 +1,531 @@
+{% load form_extras %}
+
+<div class="fragment-header">
+  <h4>Registros — {{ peca.nome }} ({{ veiculo }})</h4>
+
+  {% if saved %}
+    <div class="notice success">Registro salvo com sucesso</div>
+    <script>setTimeout(function(){var n=document.querySelector('.notice.success'); if(n) n.remove();}, 2500);</script>
+  {% endif %}
+</div>
+<table class="records-table">
+  <thead>
+    <tr>
+      <th>Data</th><th>KM</th><th>Preço</th><th>Troca</th><th>Garantia (meses)</th><th>Observações</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in registros %}
+      <tr id="registro-{{ r.id }}" class="registro-row" data-registro-id="{{ r.id }}">
+        <td>{{ r.data }}</td>
+        <td>{{ r.km }}</td>
+        <td>{{ r.preco }}</td>
+        <td>{{ r.troca|yesno:"Sim,Não" }}</td>
+        <td>{{ r.garantia_meses }}</td>
+        <td>{{ r.observacoes }}</td>
+        <td class="td-actions">
+          <button type="button" class="btn-delete-registro" title="Excluir registro" onclick="
+            if(confirm('⚠️ Deseja EXCLUIR este registro de manutenção?\n\nEsta ação não pode ser desfeita!')) {
+              var btn = this;
+              btn.disabled = true;
+              btn.innerHTML = '⏳';
+              var linha = document.getElementById('registro-{{ r.id }}');
+              if(linha) linha.style.opacity = '0.5';
+              
+              var xhr = new XMLHttpRequest();
+              xhr.open('POST', '/veiculo/{{ veiculo.id }}/peca/{{ peca.id }}/registro/{{ r.id }}/excluir/', true);
+              xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+              xhr.setRequestHeader('X-CSRFToken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+              xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+              
+              xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                  if (xhr.status === 200) {
+                    if(linha) {
+                      linha.style.transition = 'all 0.3s ease';
+                      linha.style.opacity = '0';
+                      linha.style.transform = 'translateX(-20px)';
+                      setTimeout(function() {
+                        linha.remove();
+                        var tbody = linha.closest('tbody');
+                        if(tbody && tbody.querySelectorAll('tr:not(.empty-row)').length === 0) {
+                          var emptyRow = document.createElement('tr');
+                          emptyRow.innerHTML = '<td colspan=\'7\' style=\'text-align: center; color: #6b7280; font-style: italic;\'>Nenhum registro.</td>';
+                          tbody.appendChild(emptyRow);
+                        }
+                      }, 300);
+                    }
+                    alert('✅ Registro excluído com sucesso!');
+                  } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'currentColor\'><path d=\'M3 6v18h18v-18h-18zm5 14c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm5 0c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm5 0c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm4-18v2h-20v-2h5.711c.9 0 1.631-1.099 1.631-2h5.315c0 .901.73 2 1.631 2h5.712z\'/></svg>';
+                    if(linha) linha.style.opacity = '1';
+                    alert('❌ Erro ao excluir registro. Tente novamente.');
+                  }
+                }
+              };
+              
+              xhr.send('csrfmiddlewaretoken=' + encodeURIComponent(document.querySelector('[name=csrfmiddlewaretoken]').value));
+            }
+          ">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 6v18h18v-18h-18zm5 14c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm5 0c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm5 0c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm4-18v2h-20v-2h5.711c.9 0 1.631-1.099 1.631-2h5.315c0 .901.73 2 1.631 2h5.712z"/>
+            </svg>
+          </button>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7">Nenhum registro.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<form method="post" hx-post="{% url 'drivecar:registros_peca' veiculo.id peca.id %}" hx-target="#registros-{{ peca.id }}" class="registro-form">
+  {% csrf_token %}
+  <div class="form-grid">
+    <div class="col col-2">
+      <label class="field-label" for="id_data_{{ peca.id }}">Data</label>
+      {{ form.data|add_class:'input input-sm' }}
+    </div>
+    <div class="col col-2">
+      <label class="field-label" for="id_km_{{ peca.id }}">KM</label>
+      {{ form.km|add_class:'input input-sm' }}
+    </div>
+    <div class="col col-2">
+      <label class="field-label" for="id_preco_{{ peca.id }}">Preço</label>
+      {{ form.preco|add_class:'input input-sm' }}
+    </div>
+    <div class="col col-1">
+      <label class="field-label">Troca</label>
+      <div class="inline-center">{{ form.troca }} </div>
+    </div>
+    <div class="col col-1">
+      <label class="field-label" for="id_garantia_{{ peca.id }}">Garantia</label>
+      {{ form.garantia_meses|add_class:'input input-xs' }}
+    </div>
+    <div class="col col-5">
+      <label class="field-label" for="id_obs_{{ peca.id }}">Observações</label>
+      {{ form.observacoes|add_class:'textarea textarea-sm' }}
+    </div>
+
+    <div class="col col-12">
+      <button type="submit" class="btn-primary">[+] Adicionar registro</button>
+    </div>
+  </div>
+</form>
+
+<script>
+/* eslint-disable */
+/* Template Django - ignorar validação de linter */
+console.log('🚀 Script carregado para peça {{ peca.id }}');
+
+// Dados do último registro para cálculos de alerta
+var ULTIMO_KM = parseInt('{{ ultimo_km|default:0 }}') || 0;
+var ULTIMA_DATA = '{% if ultima_data %}{{ ultima_data|date:"Y-m-d" }}{% endif %}' || null;
+
+console.log('🔧 Debug Alertas:', {
+  ultimoKm: ULTIMO_KM,
+  ultimaData: ULTIMA_DATA,
+  ultimoKmOriginal: '{{ ultimo_km|default:0 }}',
+  ultimaDataOriginal: '{% if ultima_data %}{{ ultima_data|date:"Y-m-d" }}{% endif %}'
+});
+
+// Inicializar sino ao carregar
+document.addEventListener('DOMContentLoaded', function() {
+  var pecaId = '{{ peca.id }}';
+  var sino = document.getElementById('sino-' + pecaId);
+  
+  console.log('� Inicializando sino da peça:', pecaId);
+  
+  if (sino) {
+    console.log('✅ Sino encontrado:', sino.id);
+    
+    // Adicionar event listener ao invés de onclick inline
+    sino.addEventListener('click', function(e) {
+      e.preventDefault();
+      console.log('🔔 CLIQUE NO SINO DETECTADO!');
+      
+      // 1. Mudança visual imediata
+      var estaAtivo = sino.classList.contains('ativo');
+      
+      if (estaAtivo) {
+        // Desativar visualmente
+        sino.classList.remove('ativo');
+        sino.style.background = 'rgba(255, 255, 255, 0.8)';
+        sino.style.borderColor = '#ddd';
+        sino.style.filter = 'grayscale(100%)';
+        sino.style.opacity = '0.4';
+        sino.style.transform = 'scale(1)';
+        sino.style.boxShadow = 'none';
+        console.log('🔕 Sino DESATIVADO visualmente');
+      } else {
+        // Ativar visualmente
+        sino.classList.add('ativo');
+        sino.style.background = 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)';
+        sino.style.borderColor = '#ffd700';
+        sino.style.filter = 'grayscale(0%)';
+        sino.style.opacity = '1';
+        sino.style.transform = 'scale(1.05)';
+        sino.style.boxShadow = '0 1px 4px rgba(255, 215, 0, 0.3)';
+        console.log('🔔 Sino ATIVADO visualmente');
+      }
+      
+      // 2. Enviar para o backend
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/peca/' + pecaId + '/toggle_alerta/', true);
+      
+      // Token CSRF
+      var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+      if (csrfToken) {
+        xhr.setRequestHeader('X-CSRFToken', csrfToken.value);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        console.log('✅ Headers configurados');
+      }
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) {
+            try {
+              var response = JSON.parse(xhr.responseText);
+              console.log('✅ Resposta:', response);
+              
+              if (response.success) {
+                // Sincronizar visual com resposta do servidor
+                if (response.alerta_ativo) {
+                  sino.classList.add('ativo');
+                  sino.style.background = 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)';
+                  sino.style.borderColor = '#ffd700';
+                  sino.style.filter = 'grayscale(0%)';
+                  sino.style.opacity = '1';
+                  sino.style.transform = 'scale(1.05)';
+                  sino.style.boxShadow = '0 1px 4px rgba(255, 215, 0, 0.3)';
+                } else {
+                  sino.classList.remove('ativo');
+                  sino.style.background = 'rgba(255, 255, 255, 0.8)';
+                  sino.style.borderColor = '#ddd';
+                  sino.style.filter = 'grayscale(100%)';
+                  sino.style.opacity = '0.4';
+                  sino.style.transform = 'scale(1)';
+                  sino.style.boxShadow = 'none';
+                }
+                
+                // Notificação discreta
+                var message = response.alerta_ativo ? '🔔 Alerta ativado' : '🔕 Alerta desativado';
+                console.log(message);
+              }
+            } catch (e) {
+              console.error('❌ Erro ao processar resposta:', e);
+            }
+          } else {
+            console.error('❌ Erro HTTP:', xhr.status);
+            // Reverter visual em caso de erro
+            if (estaAtivo) {
+              sino.classList.add('ativo');
+            } else {
+              sino.classList.remove('ativo');
+            }
+          }
+        }
+      };
+      
+      xhr.send();
+      console.log('📤 Requisição enviada para backend');
+    });
+    
+    console.log('✅ Event listener adicionado ao sino');
+  } else {
+    console.error('❌ Sino não encontrado no DOM');
+  }
+});
+
+
+
+// Função global para exclusão
+window.excluirRegistro = function(registroId) {
+  console.log('🔥 FUNÇÃO CHAMADA! ID:', registroId);
+  alert('✅ TESTE: Função funcionou! Registro ID: ' + registroId);
+  
+  // Confirmar exclusão
+  if (!confirm('⚠️ Deseja EXCLUIR este registro?\n\nEsta ação não pode ser desfeita!')) {
+    console.log('❌ Cancelado pelo usuário');
+    return false;
+  }
+  
+  console.log('✅ Confirmado! Excluindo registro:', registroId);
+  
+  // Método 1: Formulário simples (mais confiável)
+  var form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/veiculo/{{ veiculo.id }}/peca/{{ peca.id }}/registro/' + registroId + '/excluir/';
+  form.style.display = 'none';
+  
+  // Token CSRF
+  var csrfInput = document.createElement('input');
+  csrfInput.type = 'hidden';
+  csrfInput.name = 'csrfmiddlewaretoken';
+  csrfInput.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  form.appendChild(csrfInput);
+  
+  // Adicionar ao body
+  document.body.appendChild(form);
+  
+  console.log('📤 Enviando formulário...');
+  
+  // Enviar
+  form.submit();
+  
+  return false;
+};
+
+// Configurar formatação de campos
+setTimeout(function() {
+  console.log('⚙️ Configurando formatação de campos...');
+  
+  var form = document.querySelector('#registros-{{ peca.id }} form.registro-form');
+  if (form) {
+    // ===== FORMATAÇÃO DO CAMPO KM =====
+    var kmField = form.querySelector('input[name$="km"]');
+    if (kmField) {
+      console.log('🚗 Campo KM encontrado, configurando formatação');
+      kmField.type = 'text';
+      kmField.placeholder = 'Ex: 123.456,789';
+      
+      function formatarKM(valor) {
+        var numero = valor.replace(/[^\d]/g, '');
+        if (numero === '') return '';
+        while (numero.length < 4) numero = '0' + numero;
+        var parteInteira = numero.slice(0, -3);
+        var decimais = numero.slice(-3);
+        parteInteira = parteInteira.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return parteInteira + ',' + decimais;
+      }
+      
+      function obterValorNumericoKM(valorFormatado) {
+        if (!valorFormatado) return '';
+        return valorFormatado.replace(/\./g, '').replace(',', '.');
+      }
+      
+      kmField.addEventListener('input', function(e) {
+        var valorFormatado = formatarKM(e.target.value);
+        e.target.value = valorFormatado;
+        setTimeout(function() {
+          e.target.setSelectionRange(valorFormatado.length, valorFormatado.length);
+        }, 0);
+      });
+      
+      form.addEventListener('submit', function() {
+        var valorOriginal = kmField.value;
+        var valorNumerico = obterValorNumericoKM(valorOriginal);
+        kmField.value = valorNumerico;
+        setTimeout(function() { kmField.value = valorOriginal; }, 100);
+      });
+    }
+    
+    // ===== FORMATAÇÃO DO CAMPO PREÇO =====
+    var precoField = form.querySelector('input[name$="preco"]');
+    if (precoField) {
+      console.log('💰 Campo Preço encontrado, configurando formatação');
+      precoField.type = 'text';
+      precoField.placeholder = 'R$ 0,00';
+      
+      function formatarPreco(valor) {
+        var numero = valor.replace(/[^\d]/g, '');
+        if (numero === '') return 'R$ ';
+        while (numero.length < 3) numero = '0' + numero;
+        var centavos = numero.slice(-2);
+        var reais = numero.slice(0, -2);
+        reais = reais.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return 'R$ ' + reais + ',' + centavos;
+      }
+      
+      function obterValorNumericoPreco(valorFormatado) {
+        if (!valorFormatado || valorFormatado === 'R$ ') return '';
+        return valorFormatado.replace('R$ ', '').replace(/\./g, '').replace(',', '.');
+      }
+      
+      precoField.addEventListener('input', function(e) {
+        var valorFormatado = formatarPreco(e.target.value);
+        e.target.value = valorFormatado;
+        setTimeout(function() {
+          e.target.setSelectionRange(valorFormatado.length, valorFormatado.length);
+        }, 0);
+      });
+      
+      precoField.addEventListener('focus', function(e) {
+        if (e.target.value === '' || e.target.value === 'R$ 0,00') {
+          e.target.value = 'R$ ';
+        }
+        setTimeout(function() {
+          e.target.setSelectionRange(e.target.value.length, e.target.value.length);
+        }, 10);
+      });
+      
+      precoField.addEventListener('blur', function(e) {
+        if (e.target.value === 'R$ ' || e.target.value === '') {
+          e.target.value = '';
+        }
+      });
+      
+      if (precoField.value === '') {
+        precoField.value = 'R$ ';
+      }
+      
+      form.addEventListener('submit', function() {
+        var valorOriginal = precoField.value;
+        var valorNumerico = obterValorNumericoPreco(valorOriginal);
+        if (valorNumerico) {
+          precoField.value = valorNumerico;
+        }
+        setTimeout(function() { precoField.value = valorOriginal; }, 100);
+      });
+    }
+  }
+}, 300);
+
+// SISTEMA DE ALERTAS INTEGRADO NO FORMULÁRIO
+window.toggleAlertaFields = function(pecaId) {
+  console.log('🔔 Toggle alerta para peça:', pecaId);
+  
+  var checkbox = document.getElementById('criar_alerta_' + pecaId);
+  var fieldsDiv = document.getElementById('alerta_fields_' + pecaId);
+  var hiddenField = document.querySelector('[name="alerta_ativo"]');
+  var previewDiv = document.getElementById('preview_' + pecaId);
+  
+  if (!checkbox || !fieldsDiv) {
+    console.error('❌ Elementos não encontrados');
+    return;
+  }
+  
+  if (checkbox.checked) {
+    // MOSTRAR campos de configuração
+    fieldsDiv.style.display = 'block';
+    if (hiddenField) hiddenField.value = 'True';
+    
+    // Mostrar preview se há dados
+    if (previewDiv) {
+      updateAlertaPreview(pecaId);
+    }
+    
+    console.log('✅ Alerta ATIVADO - campos visíveis');
+  } else {
+    // OCULTAR campos de configuração
+    fieldsDiv.style.display = 'none';
+    if (hiddenField) hiddenField.value = '';
+    
+    // Ocultar preview
+    if (previewDiv) {
+      previewDiv.style.display = 'none';
+    }
+    
+    console.log('❌ Alerta DESATIVADO - campos ocultos');
+  }
+};
+
+// Função para calcular e mostrar quando o alerta será disparado
+window.updateAlertaPreview = function(pecaId) {
+  console.log('🔄 updateAlertaPreview chamada para peça:', pecaId);
+  
+  var kmField = document.querySelector('[name="alerta_intervalo_km"]');
+  var mesesField = document.querySelector('[name="alerta_intervalo_meses"]');
+  var previewDiv = document.getElementById('preview_' + pecaId);
+  var previewContent = document.getElementById('preview_content_' + pecaId);
+  
+  console.log('📋 Elementos encontrados:', {
+    kmField: !!kmField,
+    mesesField: !!mesesField,
+    previewDiv: !!previewDiv,
+    previewContent: !!previewContent
+  });
+  
+  if (!previewDiv || !previewContent) {
+    console.log('❌ Elementos preview não encontrados');
+    return;
+  }
+  
+  var kmIntervalo = kmField ? parseInt(kmField.value) : 0;
+  var mesesIntervalo = mesesField ? parseInt(mesesField.value) : 0;
+  
+  console.log('📊 Valores dos campos:', {
+    kmIntervalo: kmIntervalo,
+    mesesIntervalo: mesesIntervalo,
+    ULTIMO_KM: ULTIMO_KM,
+    ULTIMA_DATA: ULTIMA_DATA
+  });
+  
+  var preview = [];
+  
+  // Calcular baseado em KM (usando último registro)
+  if (kmIntervalo > 0 && ULTIMO_KM > 0) {
+    var proximoKm = ULTIMO_KM + kmIntervalo;
+    preview.push('🚗 ' + proximoKm.toLocaleString('pt-BR') + ' KM');
+    console.log('✅ Adicionado cálculo KM:', proximoKm);
+  }
+  
+  // Calcular baseado em tempo (usando última data)
+  if (mesesIntervalo > 0 && ULTIMA_DATA) {
+    var dataBase = new Date(ULTIMA_DATA);
+    var proximaData = new Date(dataBase);
+    proximaData.setMonth(proximaData.getMonth() + mesesIntervalo);
+    preview.push('📅 ' + proximaData.toLocaleDateString('pt-BR'));
+    console.log('✅ Adicionado cálculo Data:', proximaData.toLocaleDateString('pt-BR'));
+  }
+  
+  console.log('📝 Preview final:', preview);
+  
+  if (preview.length > 0) {
+    previewContent.innerHTML = preview.join(' ou ');
+    previewDiv.style.display = 'block';
+    console.log('✅ Preview exibido:', preview.join(' ou '));
+  } else {
+    previewDiv.style.display = 'none';
+    console.log('❌ Preview oculto - sem dados suficientes');
+  }
+};
+
+// Inicialização e sincronização do sistema de alertas
+document.addEventListener('DOMContentLoaded', function() {
+  var form = document.querySelector('form.registro-form');
+  var pecaId = '{{ peca.id }}';
+  
+  if (form) {
+    // Configurar listeners para preview em tempo real
+    var kmField = form.querySelector('[name="alerta_intervalo_km"]');
+    var mesesField = form.querySelector('[name="alerta_intervalo_meses"]');
+    
+    if (kmField) {
+      kmField.addEventListener('input', function() {
+        updateAlertaPreview(pecaId);
+      });
+    }
+    
+    if (mesesField) {
+      mesesField.addEventListener('input', function() {
+        updateAlertaPreview(pecaId);
+      });
+    }
+    
+  // Inicializar estado do alerta
+  var checkbox = form.querySelector('[name="criar_alerta"]');
+  var alertaSection = form.querySelector('.alerta-section');
+  var alertaFields = form.querySelector('.alerta-fields');
+  
+  // Verificar se deve mostrar campos de alerta (dados existentes ou novo registro)
+  if (checkbox && (checkbox.checked || (kmField && kmField.value) || (mesesField && mesesField.value))) {
+    if (alertaSection) alertaSection.style.display = 'block';
+    if (alertaFields) alertaFields.style.display = 'block';
+    if (!checkbox.checked) checkbox.checked = true;
+    updateAlertaPreview(pecaId);
+  }    // Sincronizar campos no envio do formulário
+    form.addEventListener('submit', function() {
+      var hiddenField = form.querySelector('[name="alerta_ativo"]');
+      
+      if (checkbox && hiddenField) {
+        hiddenField.value = checkbox.checked ? 'True' : '';
+        console.log('📝 Campo alerta_ativo definido como:', hiddenField.value);
+      }
+    });
+  }
+});
+
+console.log('✅ Script finalizado - Sistema de alertas integrado disponível');
+</script>

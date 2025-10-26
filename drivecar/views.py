@@ -1,7 +1,7 @@
 from django.shortcuts import render
 
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Veiculo, Alerta, RegistroManutencao, Peca
+from .models import Veiculo, RegistroManutencao, Peca
 from django import forms
 from django.urls import reverse
 from django.http import HttpResponse
@@ -101,7 +101,14 @@ def registros_peca(request, veiculo_id, peca_id):
         form = RegistroForm()
 
     registros = RegistroManutencao.objects.filter(veiculo=veiculo, peca=peca).order_by("-data")
-    return render(request, "drivecar/registros_peca_fragment.html", {"veiculo": veiculo, "peca": peca, "registros": registros, "form": form, "saved": saved})
+    
+    return render(request, "drivecar/registros_peca_fragment.html", {
+        "veiculo": veiculo, 
+        "peca": peca, 
+        "registros": registros, 
+        "form": form, 
+        "saved": saved
+    })
 
 
 @csrf_exempt
@@ -176,15 +183,15 @@ def cadastrar_veiculo(request):
         form = VeiculoForm()
     return render(request, "drivecar/cadastrar_veiculo.html", {"form": form})
 
-def lista_alertas(request):
-    alertas = Alerta.objects.select_related("veiculo").order_by("data_prevista", "km_previsto")
-    return render(request, "drivecar/alertas.html", {"alertas": alertas})
+
 
 def registros_veiculo(request, veiculo_id):
     veiculo = get_object_or_404(Veiculo, id=veiculo_id)
     registros = RegistroManutencao.objects.filter(veiculo=veiculo).select_related("peca").order_by("-data")
     # este template pode ser retornado como fragmento HTMX
     return render(request, "drivecar/registros_fragment.html", {"veiculo": veiculo, "registros": registros})
+
+
 
 def excluir_veiculo(request, veiculo_id):
     """Exclui um veículo e todos os seus registros associados"""
@@ -219,14 +226,24 @@ def excluir_registro(request, veiculo_id, peca_id, registro_id):
             
             print(f"✅ Registro {registro_id} excluído com sucesso!")
             
-            # Para HTMX com hx-swap="delete": retornar resposta vazia (200 OK)
-            if request.headers.get("HX-Request") == "true":
-                print("⚡ HTMX - linha será removida automaticamente")
+            # Debug: verificar headers HTMX
+            hx_request = request.headers.get('HX-Request')
+            has_htmx_attr = hasattr(request, 'htmx') and request.htmx
+            print(f"🔍 Headers de debug:")
+            print(f"   HX-Request: {hx_request}")
+            print(f"   X-Requested-With: {request.headers.get('X-Requested-With')}")
+            print(f"   Content-Type: {request.headers.get('Content-Type')}")
+            print(f"   request.htmx: {has_htmx_attr}")
+            print(f"   User-Agent: {request.headers.get('User-Agent', 'N/A')[:50]}...")
+            
+            # Para HTMX/AJAX: retornar resposta vazia (200 OK)
+            if hx_request == 'true' or has_htmx_attr or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                print("⚡ HTMX/AJAX detectado - linha será removida automaticamente")
                 return HttpResponse("", status=200)
             
-            # Requisição normal: redirecionar
-            print("↩️ Redirecionando...")
-            return redirect("drivecar:registros_peca", veiculo_id=veiculo_id, peca_id=peca_id)
+            # Requisição normal: redirecionar para a página de manutenção
+            print("↩️ Requisição normal - redirecionando para página de manutenção...")
+            return redirect("drivecar:manutencao", veiculo_id=veiculo_id)
             
         except Exception as e:
             print(f"❌ ERRO ao excluir registro: {e}")
@@ -235,3 +252,6 @@ def excluir_registro(request, veiculo_id, peca_id, registro_id):
             return HttpResponse(f"Erro ao excluir registro: {e}", status=500)
     
     return HttpResponseBadRequest("❌ Método não permitido")
+
+
+

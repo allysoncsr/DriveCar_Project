@@ -4,6 +4,7 @@
   {% load static %}
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <title>DriveCar - {% block title %}{% endblock %}</title>
   <!-- adicionar CSS do Tailwind depois -->
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
@@ -20,7 +21,6 @@
       </a>
       <nav class="main-nav">
         <a class="nav-item" href="{% url 'drivecar:cadastrar_veiculo' %}">Cadastrar veículo</a>
-        <a class="nav-item" href="{% url 'drivecar:lista_alertas' %}">Alertas</a>
         <a class="nav-item" href="/admin/">Admin</a>
       </nav>
     </div>
@@ -30,5 +30,47 @@
     {% block content %}{% endblock %}
   </main>
   <script src="{% static 'js/main.js' %}?v=1"></script>
+  <script>
+    // Configurar HTMX para usar CSRF token automaticamente
+    document.body.addEventListener('htmx:configRequest', function(evt) {
+      evt.detail.headers['X-CSRFToken'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    });
+
+    // Função para excluir registro via AJAX - GLOBAL
+    function excluirRegistro(registroId, url) {
+      console.log('🖱️ Botão clicado! Registro:', registroId, 'URL:', url);
+      if (confirm('Tem certeza que deseja excluir este registro?')) {
+        console.log('🗑️ Excluindo registro:', registroId);
+        
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: 'csrfmiddlewaretoken=' + document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        })
+        .then(response => {
+          console.log('📨 Resposta:', response.status);
+          if (response.ok) {
+            // Remover a linha da tabela
+            const linha = document.getElementById('registro-' + registroId);
+            if (linha) {
+              linha.remove();
+              console.log('✅ Linha removida com sucesso!');
+            }
+          } else {
+            console.error('❌ Erro na exclusão:', response.status);
+            alert('Erro ao excluir registro. Tente novamente.');
+          }
+        })
+        .catch(error => {
+          console.error('❌ Erro:', error);
+          alert('Erro ao excluir registro. Tente novamente.');
+        });
+      }
+    }
+  </script>
 </body>
 </html>

@@ -1,0 +1,177 @@
+{% extends "drivecar/base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>📋 Sistema de Alertas de Manutenção</h2>
+    
+    {% if alertas_vencidos %}
+    <div class="alertas-section alertas-vencidos">
+        <h3>🚨 Alertas Vencidos ({{ alertas_vencidos|length }})</h3>
+        <div class="alertas-grid">
+            {% for alerta in alertas_vencidos %}
+            <div class="alerta-card vencido">
+                <div class="alerta-header">
+                    <h4>{{ alerta.veiculo }} - {{ alerta.peca.nome }}</h4>
+                    <span class="status-badge vencido">VENCIDO</span>
+                </div>
+                <div class="alerta-info">
+                    <p><strong>Último registro:</strong> {{ alerta.registro.data }} - {{ alerta.registro.km|floatformat:0 }} KM</p>
+                    <p><strong>Status:</strong> {{ alerta.status.status }}</p>
+                    {% if alerta.proximo_km %}
+                        <p><strong>KM previsto:</strong> {{ alerta.proximo_km|floatformat:0 }} KM</p>
+                    {% endif %}
+                    {% if alerta.proxima_data %}
+                        <p><strong>Data prevista:</strong> {{ alerta.proxima_data }}</p>
+                    {% endif %}
+                </div>
+                <div class="alerta-actions">
+                    <a href="{% url 'drivecar:registros_peca' alerta.veiculo.id alerta.peca.id %}" class="btn btn-primary">
+                        Registrar Manutenção
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if alertas_ativos %}
+    <div class="alertas-section alertas-ativos">
+        <h3>🔔 Alertas Ativos ({{ alertas_ativos|length }})</h3>
+        <div class="alertas-grid">
+            {% for alerta in alertas_ativos %}
+            <div class="alerta-card ativo">
+                <div class="alerta-header">
+                    <h4>{{ alerta.veiculo }} - {{ alerta.peca.nome }}</h4>
+                    <span class="status-badge ativo">ATIVO</span>
+                </div>
+                <div class="alerta-info">
+                    <p><strong>Último registro:</strong> {{ alerta.registro.data }} - {{ alerta.registro.km|floatformat:0 }} KM</p>
+                    <p><strong>Status:</strong> {{ alerta.status.status }}</p>
+                    {% if alerta.proximo_km %}
+                        <p><strong>Próximo em:</strong> {{ alerta.proximo_km|floatformat:0 }} KM</p>
+                    {% endif %}
+                    {% if alerta.proxima_data %}
+                        <p><strong>Próximo em:</strong> {{ alerta.proxima_data }}</p>
+                    {% endif %}
+                </div>
+                <div class="alerta-actions">
+                    <a href="{% url 'drivecar:registros_peca' alerta.veiculo.id alerta.peca.id %}" class="btn btn-secondary">
+                        Ver Registros
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if not alertas_vencidos and not alertas_ativos %}
+    <div class="empty-state">
+        <h3>✅ Nenhum alerta configurado</h3>
+        <p>Configure alertas nos registros de manutenção para monitorar automaticamente quando é hora de realizar a próxima manutenção.</p>
+        <a href="{% url 'drivecar:index' %}" class="btn btn-primary">Ver Veículos</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.alertas-section {
+    margin-bottom: 2rem;
+}
+
+.alertas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.alerta-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-left: 4px solid #ddd;
+}
+
+.alerta-card.vencido {
+    border-left-color: #dc3545;
+    background: #fff5f5;
+}
+
+.alerta-card.ativo {
+    border-left-color: #28a745;
+}
+
+.alerta-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.alerta-header h4 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.status-badge.vencido {
+    background: #dc3545;
+    color: white;
+}
+
+.status-badge.ativo {
+    background: #28a745;
+    color: white;
+}
+
+.alerta-info p {
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+.alerta-actions {
+    margin-top: 1rem;
+    text-align: right;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+    .alertas-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

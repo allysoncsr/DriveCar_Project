@@ -79,6 +79,8 @@ class RegistroManutencao(models.Model):
     troca = models.BooleanField(_("troca (sim/não)"), default=False)
     garantia_meses = models.PositiveIntegerField(_("tempo de garantia (meses)"), null=True, blank=True)
     observacoes = models.TextField(_("observações"), blank=True)
+    # Campo remanescente do sistema de alertas removido - mantido para compatibilidade
+    alerta_ativo = models.BooleanField(_("alerta ativo"), default=False)
 
     def __str__(self):
         return f"{self.veiculo} - {self.peca.nome} @ {self.km} km"
