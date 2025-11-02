@@ -4,8 +4,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse
-from datetime import datetime
-from .models import Veiculo, RegistroManutencao, Peca
+from django.core.paginator import Paginator
+from django.db import models
+from django.utils import timezone
+from datetime import datetime, timedelta
+from .models import Veiculo, RegistroManutencao, Peca, Servico, LocalLavagem, Modelo, Versao, Marca
 
 def user_login(request):
     if request.method == 'POST':
@@ -56,7 +59,7 @@ def index(request):
 
 @login_required
 def cadastrar_veiculo(request):
-    from .models import Marca, Modelo, Versao
+
     
     if request.method == 'POST':
         marca_id = request.POST['marca']
@@ -125,9 +128,6 @@ def excluir_veiculo(request, veiculo_id):
 
 @login_required
 def manutencao(request, veiculo_id):
-    from .models import Servico, LocalLavagem
-    from django.core.paginator import Paginator
-    from django.db import models
     
     veiculo = get_object_or_404(Veiculo, id=veiculo_id, usuario=request.user)
     pecas = Peca.objects.all()
@@ -162,8 +162,6 @@ def manutencao(request, veiculo_id):
         )
     
     # Filtros de data/período
-    from datetime import datetime, timedelta
-    from django.utils import timezone
     
     if filtro_periodo:
         hoje = timezone.now().date()
@@ -347,8 +345,6 @@ def excluir_registro(request, registro_id):
 @login_required
 def api_modelos(request, marca_id):
     """API para buscar modelos de uma marca"""
-    from django.http import JsonResponse
-    from .models import Modelo
     
     try:
         modelos = Modelo.objects.filter(marca_id=marca_id, ativo=True).order_by('nome')
@@ -382,8 +378,6 @@ def excluir_local_lavagem(request, local_id):
     return JsonResponse({'error': 'Método não permitido'}, status=405)  
 def api_versoes(request, modelo_id):
     """API para buscar versões de um modelo"""
-    from django.http import JsonResponse
-    from .models import Versao
     
     try:
         versoes = Versao.objects.filter(modelo_id=modelo_id, ativo=True).order_by('nome')

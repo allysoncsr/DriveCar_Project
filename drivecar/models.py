@@ -402,6 +402,7 @@ class RegistroManutencao(models.Model):
         ("so_interna", "🏠 Só interna"),
         ("so_externa", "🚗 Só externa"),
         ("enceramento", "✨ Enceramento"),
+        ("vitrificacao", "🔬 Vitrificação"),
         ("detalhamento", "💎 Detalhamento"),
         ("lavagem_motor", "🔧 Lavagem de motor"),
         ("limpeza_vidros", "🪟 Limpeza de vidros"),

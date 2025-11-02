@@ -76,6 +76,7 @@
               <option value="so_interna">🏠 Só interna</option>
               <option value="so_externa">🚗 Só externa</option>
               <option value="enceramento">✨ Enceramento</option>
+              <option value="vitrificacao">🔬 Vitrificação</option>
               <option value="detalhamento">💎 Detalhamento</option>
               <option value="lavagem_motor">🔧 Lavagem de motor</option>
               <option value="limpeza_vidros">🪟 Limpeza de vidros</option>
@@ -166,7 +167,7 @@
         </div>
       </div>
 
-      <div class="form-row">
+      <div class="form-row servico-peca-only" style="display: none;">
         <div class="form-group">
           <label for="troca">
             <input type="checkbox" name="troca" id="troca"> Foi uma troca/substituição
@@ -212,6 +213,7 @@
               <option value="">Todos</option>
               <option value="servico" {% if filtro_tipo == 'servico' %}selected{% endif %}>🔧 Serviços</option>
               <option value="peca" {% if filtro_tipo == 'peca' %}selected{% endif %}>⚙️ Peças</option>
+              <option value="lavagem" {% if filtro_tipo == 'lavagem' %}selected{% endif %}>🧽 Lavagem</option>
             </select>
           </div>
           
@@ -1050,6 +1052,9 @@ document.addEventListener('DOMContentLoaded', function() {
     areaPeca.style.display = 'none';
     areaLavagem.style.display = 'none';
     
+    // Controlar campos específicos de serviço/peça
+    const servicoPecaFields = document.querySelector('.servico-peca-only');
+    
     // Limpar campos obrigatórios
     if (selectServico) selectServico.removeAttribute('required');
     if (selectPeca) selectPeca.removeAttribute('required');
@@ -1059,12 +1064,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (tipoSelecionado === 'servico') {
       areaServico.style.display = 'block';
       if (selectServico) selectServico.setAttribute('required', 'required');
+      if (servicoPecaFields) servicoPecaFields.style.display = 'flex';
     } else if (tipoSelecionado === 'peca') {
       areaPeca.style.display = 'block';
       if (selectPeca) selectPeca.setAttribute('required', 'required');
+      if (servicoPecaFields) servicoPecaFields.style.display = 'flex';
     } else if (tipoSelecionado === 'lavagem') {
       areaLavagem.style.display = 'block';
       if (selectTipoLavagem) selectTipoLavagem.setAttribute('required', 'required');
+      if (servicoPecaFields) servicoPecaFields.style.display = 'none';
+      
+      // Limpar valores dos campos de troca e garantia para lavagem
+      const trocaCheckbox = document.getElementById('troca');
+      const garantiaInput = document.getElementById('garantia_meses');
+      if (trocaCheckbox) trocaCheckbox.checked = false;
+      if (garantiaInput) garantiaInput.value = '';
     }
   }
   
