@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Veiculo, Peca, RegistroManutencao, Alerta
+from .models import Veiculo, Peca, RegistroManutencao, Alerta, LocalLavagem
 
 @admin.register(Veiculo)
 class VeiculoAdmin(admin.ModelAdmin):
@@ -26,3 +26,16 @@ class AlertaAdmin(admin.ModelAdmin):
     list_display = ("descricao", "veiculo", "tipo", "km_previsto", "data_prevista", "ativo")
     list_filter = ("tipo", "ativo")
     search_fields = ("descricao",)
+
+
+@admin.register(LocalLavagem)
+class LocalLavagemAdmin(admin.ModelAdmin):
+    list_display = ("nome", "usuario", "ativo", "criado_em")
+    list_filter = ("ativo", "criado_em")
+    search_fields = ("nome", "endereco")
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(usuario=request.user)

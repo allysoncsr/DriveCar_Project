@@ -21,6 +21,10 @@
           <input type="radio" name="tipo_item" value="peca">
           <span class="tipo-button">⚙️ Peça</span>
         </label>
+        <label class="tipo-label">
+          <input type="radio" name="tipo_item" value="lavagem">
+          <span class="tipo-button tipo-lavagem">🚿 Lavagem</span>
+        </label>
       </div>
 
       <!-- Área de Serviços -->
@@ -56,6 +60,89 @@
               </optgroup>
             {% endfor %}
           </select>
+        </div>
+      </div>
+
+      <!-- Área de Lavagem -->
+      <div class="item-area" id="area-lavagem" style="display: none;">
+        <h4>🚿 Registrar Lavagem</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tipo_lavagem">Tipo de Lavagem:</label>
+            <select name="tipo_lavagem" id="tipo_lavagem">
+              <option value="">Selecione o tipo de lavagem...</option>
+              <option value="lavagem_simples">🚿 Lavagem simples</option>
+              <option value="lavagem_completa">🧽 Lavagem completa</option>
+              <option value="so_interna">🏠 Só interna</option>
+              <option value="so_externa">🚗 Só externa</option>
+              <option value="enceramento">✨ Enceramento</option>
+              <option value="detalhamento">💎 Detalhamento</option>
+              <option value="lavagem_motor">🔧 Lavagem de motor</option>
+              <option value="limpeza_vidros">🪟 Limpeza de vidros</option>
+              <option value="limpeza_rodas">🛞 Limpeza de rodas/pneus</option>
+              <option value="lavagem_seco">🧴 Lavagem à seco</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group local-group">
+            <label for="local_lavagem">Local:</label>
+            <select name="local_lavagem" id="local_lavagem">
+              <option value="">Selecione um local...</option>
+              
+              <!-- Locais Personalizados do Usuário -->
+              {% if locais_lavagem %}
+              <optgroup label="📂 Meus Locais">
+                {% for local in locais_lavagem %}
+                <option value="{{ local.nome }}">🔖 {{ local.nome }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endif %}
+              
+              <optgroup label="📍 Recife e Região">
+                <option value="Lava Jato do Centro - Rua do Hospício, 81, Boa Vista">🏪 Lava Jato do Centro - Rua do Hospício, 81, Boa Vista</option>
+                <option value="AutoLux - Av. Conde da Boa Vista, 1200, Boa Vista">✨ AutoLux - Av. Conde da Boa Vista, 1200, Boa Vista</option>
+                <option value="Clean Car - Rua Real da Torre, 550, Madalena">🚿 Clean Car - Rua Real da Torre, 550, Madalena</option>
+                <option value="Lava Rápido Imbiribeira - Av. Mascarenhas de Morais, 4861">⚡ Lava Rápido Imbiribeira - Av. Mascarenhas de Morais, 4861</option>
+                <option value="Posto Shell - Av. Agamenon Magalhães, 2000, Derby">🏢 Posto Shell - Av. Agamenon Magalhães, 2000, Derby</option>
+                <option value="Lava Jato Piedade - Rua José Bonifácio, 200, Piedade">🧽 Lava Jato Piedade - Rua José Bonifácio, 200, Piedade</option>
+                <option value="AutoSpa Premium - Rua Barão de Souza Leão, 400, Boa Viagem">💎 AutoSpa Premium - Rua Barão de Souza Leão, 400, Boa Viagem</option>
+                <option value="Wash & Go - Av. Bernardo Vieira de Melo, 3150, Candeias, Jaboatão">🚗 Wash & Go - Av. Bernardo Vieira de Melo, 3150, Candeias, Jaboatão</option>
+                <option value="Ecológico Car Wash - Rua Dr. José Maria, 90, Graças">🌿 Ecológico Car Wash - Rua Dr. José Maria, 90, Graças</option>
+                <option value="Lava Jato Casa Forte - Av. 17 de Agosto, 1500, Casa Forte">🏠 Lava Jato Casa Forte - Av. 17 de Agosto, 1500, Casa Forte</option>
+              </optgroup>
+              <optgroup label="📍 Outros Locais">
+                <option value="Em casa">🏠 Em casa</option>
+                <option value="Lavagem móvel">🚗 Lavagem móvel</option>
+                <option value="Posto de gasolina">⛽ Posto de gasolina</option>
+              </optgroup>
+              <option value="novo_local">➕ Adicionar novo local...</option>
+            </select>
+            
+            <!-- Lista de Locais Personalizados para Gerenciar -->
+            {% if locais_lavagem %}
+            <div class="locais-personalizados-manager" style="margin-top: 10px;">
+              <small style="color: #666; font-size: 0.85em;">
+                <strong>Seus locais personalizados:</strong>
+                {% for local in locais_lavagem %}
+                <span class="local-item" style="display: inline-block; margin: 2px 5px 2px 0; padding: 2px 8px; background: #e9ecef; border-radius: 12px; font-size: 0.8em;">
+                  🔖 {{ local.nome }}
+                  <button type="button" class="btn-excluir-local" data-local-id="{{ local.id }}" data-local-nome="{{ local.nome }}" 
+                          style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 0.9em; padding: 0 2px;" 
+                          title="Remover local">🗑️</button>
+                </span>
+                {% endfor %}
+              </small>
+            </div>
+            {% endif %}
+          </div>
+          
+          <div class="form-group novo-local-group" id="novo-local-group" style="display: none;">
+            <label for="novo_local">Novo Local:</label>
+            <input type="text" name="novo_local" id="novo_local" placeholder="Nome do estabelecimento - Endereço completo">
+            <small class="help-text">Ex: Lava Jato do João - Rua das Flores, 123, Bairro</small>
+          </div>
         </div>
       </div>
       
@@ -288,6 +375,12 @@
 .tipo-label input[type="radio"]:checked + .tipo-button {
   background: linear-gradient(135deg, #3b82f6, #8b5cf6);
   color: white;
+}
+
+.tipo-label input[type="radio"]:checked + .tipo-lavagem {
+  background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+  color: white;
+}
   transform: translateY(-2px);
 }
 
@@ -614,6 +707,26 @@
   transform: translateY(-2px);
 }
 
+/* Estilos específicos para lavagem */
+.local-group {
+  position: relative;
+}
+
+.novo-local-group {
+  margin-top: 0.5rem;
+}
+
+.novo-local-group input {
+  width: 100%;
+}
+
+.help-text {
+  color: #6b7280;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
 .registros-container {
   background: white;
   padding: 2rem;
@@ -919,30 +1032,107 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Alternar entre Serviço e Peça
+  // Alternar entre Serviço, Peça e Lavagem
   const tipoRadios = document.querySelectorAll('input[name="tipo_item"]');
   const areaServico = document.getElementById('area-servico');
   const areaPeca = document.getElementById('area-peca');
+  const areaLavagem = document.getElementById('area-lavagem');
   const selectServico = document.getElementById('servico');
   const selectPeca = document.getElementById('peca');
+  const selectTipoLavagem = document.getElementById('tipo_lavagem');
+  const selectLocalLavagem = document.getElementById('local_lavagem');
   
   function toggleAreas() {
     const tipoSelecionado = document.querySelector('input[name="tipo_item"]:checked').value;
     
+    // Ocultar todas as áreas primeiro
+    areaServico.style.display = 'none';
+    areaPeca.style.display = 'none';
+    areaLavagem.style.display = 'none';
+    
+    // Limpar campos obrigatórios
+    if (selectServico) selectServico.removeAttribute('required');
+    if (selectPeca) selectPeca.removeAttribute('required');
+    if (selectTipoLavagem) selectTipoLavagem.removeAttribute('required');
+    if (selectLocalLavagem) selectLocalLavagem.removeAttribute('required');
+    
     if (tipoSelecionado === 'servico') {
       areaServico.style.display = 'block';
-      areaPeca.style.display = 'none';
-      selectServico.required = true;
-      selectPeca.required = false;
-      selectPeca.value = '';
-    } else {
-      areaServico.style.display = 'none';
+      if (selectServico) selectServico.setAttribute('required', 'required');
+    } else if (tipoSelecionado === 'peca') {
       areaPeca.style.display = 'block';
-      selectPeca.required = true;
-      selectServico.required = false;
-      selectServico.value = '';
+      if (selectPeca) selectPeca.setAttribute('required', 'required');
+    } else if (tipoSelecionado === 'lavagem') {
+      areaLavagem.style.display = 'block';
+      if (selectTipoLavagem) selectTipoLavagem.setAttribute('required', 'required');
     }
   }
+  
+  // Controlar exibição do campo "Novo Local" para lavagem
+  const novoLocalGroup = document.getElementById('novo-local-group');
+  
+  if (selectLocalLavagem && novoLocalGroup) {
+    selectLocalLavagem.addEventListener('change', function() {
+      if (this.value === 'novo_local') {
+        novoLocalGroup.style.display = 'block';
+        const novoLocalInput = document.getElementById('novo_local');
+        if (novoLocalInput) novoLocalInput.setAttribute('required', 'required');
+      } else {
+        novoLocalGroup.style.display = 'none';
+        const novoLocalInput = document.getElementById('novo_local');
+        if (novoLocalInput) {
+          novoLocalInput.removeAttribute('required');
+          novoLocalInput.value = '';
+        }
+      }
+    });
+  }
+  
+  // Gerenciar exclusão de locais personalizados
+  document.querySelectorAll('.btn-excluir-local').forEach(button => {
+    button.addEventListener('click', function() {
+      const localId = this.getAttribute('data-local-id');
+      const localNome = this.getAttribute('data-local-nome');
+      
+      if (confirm(`Tem certeza que deseja remover o local "${localNome}"?`)) {
+        fetch(`/local-lavagem/${localId}/excluir/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+          },
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Remover o local da interface
+            this.closest('.local-item').remove();
+            
+            // Remover do select também
+            const selectOption = document.querySelector(`#local_lavagem option[value="${localNome}"]`);
+            if (selectOption) {
+              selectOption.remove();
+            }
+            
+            // Se não houver mais locais personalizados, esconder a seção
+            const locaisManager = document.querySelector('.locais-personalizados-manager');
+            const remainingItems = locaisManager.querySelectorAll('.local-item');
+            if (remainingItems.length === 0) {
+              locaisManager.style.display = 'none';
+            }
+            
+            alert('Local removido com sucesso!');
+          } else {
+            alert('Erro ao remover local. Tente novamente.');
+          }
+        })
+        .catch(error => {
+          console.error('Erro:', error);
+          alert('Erro ao remover local. Tente novamente.');
+        });
+      }
+    });
+  });
   
   // Inicializar
   toggleAreas();

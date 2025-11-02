@@ -125,13 +125,14 @@ def excluir_veiculo(request, veiculo_id):
 
 @login_required
 def manutencao(request, veiculo_id):
-    from .models import Servico
+    from .models import Servico, LocalLavagem
     from django.core.paginator import Paginator
     from django.db import models
     
     veiculo = get_object_or_404(Veiculo, id=veiculo_id, usuario=request.user)
     pecas = Peca.objects.all()
     servicos = Servico.objects.all()
+    locais_lavagem = LocalLavagem.objects.filter(usuario=request.user, ativo=True).order_by('nome')
     
     # Filtros
     filtro_tipo = request.GET.get('tipo', '')
@@ -156,7 +157,8 @@ def manutencao(request, veiculo_id):
     if filtro_categoria:
         registros_qs = registros_qs.filter(
             models.Q(peca__categoria=filtro_categoria) | 
-            models.Q(servico__categoria=filtro_categoria)
+            models.Q(servico__categoria=filtro_categoria) |
+            models.Q(tipo='lavagem')  # Lavagem sempre na categoria "Lavagem"
         )
     
     # Filtros de data/período
@@ -250,6 +252,43 @@ def manutencao(request, veiculo_id):
                 garantia_meses=int(garantia_meses) if garantia_meses else None,
             )
             messages.success(request, f'Serviço "{servico.nome}" registrado com sucesso!')
+            
+        elif tipo_item == 'lavagem':
+            tipo_lavagem = request.POST['tipo_lavagem']
+            local_lavagem = request.POST.get('local_lavagem')
+            
+            # Se foi selecionado "novo local", criar o local e usar seu valor
+            if local_lavagem == 'novo_local':
+                novo_local_nome = request.POST.get('novo_local', '')
+                if novo_local_nome:
+                    # Criar novo local personalizado
+                    local_obj, created = LocalLavagem.objects.get_or_create(
+                        usuario=request.user,
+                        nome=novo_local_nome,
+                        defaults={'ativo': True}
+                    )
+                    local_lavagem = novo_local_nome
+                    if created:
+                        messages.info(request, f'Novo local "{novo_local_nome}" adicionado à sua lista!')
+                else:
+                    messages.error(request, 'Por favor, informe o nome do novo local.')
+                    return redirect('drivecar:manutencao', veiculo_id=veiculo.id)
+            
+            registro = RegistroManutencao.objects.create(
+                veiculo=veiculo,
+                tipo='lavagem',
+                tipo_lavagem=tipo_lavagem,
+                local_lavagem=local_lavagem,
+                km=quilometragem,
+                preco=custo,
+                observacoes=observacoes,
+                data=datetime.strptime(data_realizacao, '%Y-%m-%d').date(),
+                troca=False,  # Lavagem não tem troca
+                garantia_meses=None,  # Lavagem não tem garantia
+            )
+            # Obter o nome do tipo de lavagem para a mensagem
+            tipo_nome = dict(RegistroManutencao.TIPO_LAVAGEM_CHOICES).get(tipo_lavagem, tipo_lavagem)
+            messages.success(request, f'Lavagem "{tipo_nome}" registrada com sucesso!')
         
         # Atualizar quilometragem do veículo se necessário
         if quilometragem > veiculo.km_atual:
@@ -264,6 +303,11 @@ def manutencao(request, veiculo_id):
         categorias_filtro.add((peca.categoria, peca.get_categoria_display()))
     for servico in servicos:
         categorias_filtro.add((servico.categoria, servico.get_categoria_display()))
+    
+    # Adicionar categoria "Lavagem" se houver registros de lavagem
+    if RegistroManutencao.objects.filter(veiculo=veiculo, tipo='lavagem').exists():
+        categorias_filtro.add(('lavagem', 'Lavagem'))
+    
     categorias_filtro = sorted(list(categorias_filtro), key=lambda x: x[1])
     
     context = {
@@ -274,6 +318,7 @@ def manutencao(request, veiculo_id):
         'categorias_pecas': categorias_pecas,
         'categorias_servicos': categorias_servicos,
         'categorias_filtro': categorias_filtro,
+        'locais_lavagem': locais_lavagem,
         'filtro_tipo': filtro_tipo,
         'filtro_troca': filtro_troca,
         'filtro_categoria': filtro_categoria,
@@ -320,7 +365,21 @@ def api_modelos(request, marca_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
+
 @login_required  
+def excluir_local_lavagem(request, local_id):
+    """View para excluir um local de lavagem personalizado"""
+    from .models import LocalLavagem
+    
+    local = get_object_or_404(LocalLavagem, id=local_id, usuario=request.user)
+    
+    if request.method == 'POST':
+        nome_local = local.nome
+        local.delete()
+        messages.success(request, f'Local "{nome_local}" removido com sucesso!')
+        return JsonResponse({'success': True})
+    
+    return JsonResponse({'error': 'Método não permitido'}, status=405)  
 def api_versoes(request, modelo_id):
     """API para buscar versões de um modelo"""
     from django.http import JsonResponse
@@ -342,3 +401,19 @@ def api_versoes(request, modelo_id):
         return JsonResponse(data)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required  
+def excluir_local_lavagem(request, local_id):
+    """View para excluir um local de lavagem personalizado"""
+    from .models import LocalLavagem
+    
+    local = get_object_or_404(LocalLavagem, id=local_id, usuario=request.user)
+    
+    if request.method == 'POST':
+        nome_local = local.nome
+        local.delete()
+        messages.success(request, f'Local "{nome_local}" removido com sucesso!')
+        return JsonResponse({'success': True})
+    
+    return JsonResponse({'error': 'Método não permitido'}, status=405)

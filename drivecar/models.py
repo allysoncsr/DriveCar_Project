@@ -392,6 +392,21 @@ class RegistroManutencao(models.Model):
     TIPO_CHOICES = [
         ("peca", "Peça"),
         ("servico", "Serviço"),
+        ("lavagem", "Lavagem"),
+    ]
+    
+    # Tipos de lavagem mais usados
+    TIPO_LAVAGEM_CHOICES = [
+        ("lavagem_simples", "🚿 Lavagem simples"),
+        ("lavagem_completa", "🧽 Lavagem completa"),
+        ("so_interna", "🏠 Só interna"),
+        ("so_externa", "🚗 Só externa"),
+        ("enceramento", "✨ Enceramento"),
+        ("detalhamento", "💎 Detalhamento"),
+        ("lavagem_motor", "🔧 Lavagem de motor"),
+        ("limpeza_vidros", "🪟 Limpeza de vidros"),
+        ("limpeza_rodas", "🛞 Limpeza de rodas/pneus"),
+        ("lavagem_seco", "🧴 Lavagem à seco"),
     ]
     
     veiculo = models.ForeignKey(Veiculo, on_delete=models.CASCADE, verbose_name=_("veículo"))
@@ -400,6 +415,10 @@ class RegistroManutencao(models.Model):
     # Relacionamentos opcionais (um OU outro será preenchido)
     peca = models.ForeignKey(Peca, on_delete=models.CASCADE, verbose_name=_("peça"), null=True, blank=True)
     servico = models.ForeignKey(Servico, on_delete=models.CASCADE, verbose_name=_("serviço"), null=True, blank=True)
+    
+    # Campos específicos para lavagem
+    tipo_lavagem = models.CharField(_("tipo de lavagem"), max_length=20, choices=TIPO_LAVAGEM_CHOICES, null=True, blank=True)
+    local_lavagem = models.CharField(_("local da lavagem"), max_length=200, null=True, blank=True)
     
     data = models.DateField(_("data"))
     km = models.PositiveIntegerField(_("quilometragem"))
@@ -411,19 +430,23 @@ class RegistroManutencao(models.Model):
     alerta_ativo = models.BooleanField(_("alerta ativo"), default=False)
 
     def get_item_nome(self):
-        """Retorna o nome da peça ou serviço"""
+        """Retorna o nome da peça, serviço ou lavagem"""
         if self.tipo == "peca" and self.peca:
             return self.peca.nome
         elif self.tipo == "servico" and self.servico:
             return self.servico.nome
+        elif self.tipo == "lavagem" and self.tipo_lavagem:
+            return self.get_tipo_lavagem_display()
         return "Item não definido"
 
     def get_item_categoria(self):
-        """Retorna a categoria da peça ou serviço"""
+        """Retorna a categoria da peça, serviço ou lavagem"""
         if self.tipo == "peca" and self.peca:
             return self.peca.get_categoria_display()
         elif self.tipo == "servico" and self.servico:
             return self.servico.get_categoria_display()
+        elif self.tipo == "lavagem":
+            return "Lavagem"
         return ""
 
     def __str__(self):
@@ -454,4 +477,22 @@ class Alerta(models.Model):
     class Meta:
         verbose_name = _("Alerta")
         verbose_name_plural = _("Alertas")
+
+
+class LocalLavagem(models.Model):
+    """Modelo para armazenar locais de lavagem personalizados do usuário"""
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name=_("usuário"))
+    nome = models.CharField(_("nome do local"), max_length=200, help_text="Ex: Lava Jato do João - Rua das Flores, 123")
+    endereco = models.TextField(_("endereço"), blank=True, help_text="Endereço completo (opcional)")
+    ativo = models.BooleanField(_("ativo"), default=True)
+    criado_em = models.DateTimeField(_("criado em"), auto_now_add=True)
+    
+    class Meta:
+        verbose_name = _("Local de Lavagem")
+        verbose_name_plural = _("Locais de Lavagem")
+        ordering = ['nome']
+        unique_together = ['usuario', 'nome']
+    
+    def __str__(self):
+        return self.nome
 
