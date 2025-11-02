@@ -1,0 +1,433 @@
+{% extends 'drivecar/base.html' %}
+{% load money_filters %}
+
+{% block title %}Dashboard - {{ veiculo }}{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* Dashboard Veículo Styles */
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  min-height: 100vh;
+}
+
+.vehicle-header {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  margin-bottom: 3rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.vehicle-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #10b981);
+}
+
+.vehicle-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.vehicle-subtitle {
+  color: #64748b;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.back-link {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: rgba(59,130,246,0.1);
+}
+
+.back-link:hover {
+  background: rgba(59,130,246,0.2);
+  transform: translateX(-2px);
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border: 1px solid rgba(226,232,240,0.5);
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(59,130,246,0.15);
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Charts */
+.charts-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.chart-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border: 1px solid rgba(226,232,240,0.5);
+}
+
+.chart-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f1f5f9;
+  text-align: center;
+}
+
+.chart-container {
+  position: relative;
+  height: 350px;
+}
+
+/* Alertas */
+.alertas-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  margin-bottom: 2rem;
+}
+
+.alerta-item {
+  padding: 1rem;
+  margin: 0.5rem 0;
+  border-radius: 10px;
+  border-left: 4px solid;
+  background: rgba(0,0,0,0.02);
+}
+
+.alerta-critico {
+  border-left-color: #ef4444;
+  background: rgba(239,68,68,0.05);
+}
+
+.alerta-atencao {
+  border-left-color: #f59e0b;
+  background: rgba(245,158,11,0.05);
+}
+
+.alerta-preventivo {
+  border-left-color: #10b981;
+  background: rgba(16,185,129,0.05);
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1rem;
+  }
+  
+  .vehicle-header {
+    padding: 1.5rem;
+  }
+  
+  .vehicle-title {
+    font-size: 2rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .back-link {
+    position: static;
+    display: inline-block;
+    margin-bottom: 1rem;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <!-- Vehicle Header -->
+  <div class="vehicle-header">
+    <a href="{% url 'drivecar:dashboard' %}" class="back-link">← Voltar ao Dashboard</a>
+    <h1 class="vehicle-title">
+      🚗 {{ veiculo.marca.nome }} {{ veiculo.modelo.nome }}
+    </h1>
+    <p class="vehicle-subtitle">{{ veiculo.versao.nome }} - {{ veiculo.ano }} - {{ veiculo.placa }}</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon">💰</span>
+      <div class="stat-value">R$ {{ total_gastos|money_format }}</div>
+      <div class="stat-label">Total Gasto</div>
+    </div>
+    
+    <div class="stat-card">
+      <span class="stat-icon">🔧</span>
+      <div class="stat-value">{{ total_manutencoes }}</div>
+      <div class="stat-label">Manutenções</div>
+    </div>
+    
+    <div class="stat-card">
+      <span class="stat-icon">📊</span>
+      <div class="stat-value">R$ {{ gasto_medio|money_format }}</div>
+      <div class="stat-label">Gasto Médio</div>
+    </div>
+    
+    <div class="stat-card">
+      <span class="stat-icon">🛣️</span>
+      <div class="stat-value">{{ veiculo.km_atual|floatformat:0 }}</div>
+      <div class="stat-label">KM Atual</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-container">
+    <!-- Gastos Mensais -->
+    <div class="chart-card">
+      <h3 class="chart-title">Gastos Mensais</h3>
+      <div class="chart-container">
+        <canvas id="gastosChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Gastos por Categoria -->
+    <div class="chart-card">
+      <h3 class="chart-title">Gastos por Categoria</h3>
+      <div class="chart-container">
+        <canvas id="categoriasChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertas Ativos -->
+  {% if alertas %}
+  <div class="alertas-section">
+    <h3 class="chart-title">🚨 Alertas de Manutenção</h3>
+    {% for alerta in alertas %}
+    <div class="alerta-item alerta-{{ alerta.tipo|lower }}">
+      <strong>{{ alerta.peca.nome }}</strong> - {{ alerta.status }}
+      {% if alerta.observacoes %}
+        <br><small>{{ alerta.observacoes }}</small>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Quick Actions -->
+  <div class="chart-card">
+    <h3 class="chart-title">Ações Rápidas</h3>
+    <div style="text-align: center; padding: 1rem;">
+      <a href="{% url 'drivecar:manutencao' veiculo.id %}" 
+         style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 1rem 2rem; border-radius: 10px; text-decoration: none; font-weight: 600; margin: 0.5rem; transition: transform 0.3s ease;"
+         onmouseover="this.style.transform='translateY(-2px)'"
+         onmouseout="this.style.transform='translateY(0)'">
+        🔧 Manutenção
+      </a>
+      <a href="{% url 'drivecar:relatorios_veiculo' veiculo.id %}" 
+         style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 1rem 2rem; border-radius: 10px; text-decoration: none; font-weight: 600; margin: 0.5rem; transition: transform 0.3s ease;"
+         onmouseover="this.style.transform='translateY(-2px)'"
+         onmouseout="this.style.transform='translateY(0)'">
+        📊 Relatórios
+      </a>
+    </div>
+    
+    <!-- Export Section -->
+    <h3 class="chart-title" style="margin-top: 2rem;">Exportar Dados</h3>
+    <div style="text-align: center; padding: 1rem;">
+      <a href="{% url 'drivecar:export_veiculo_pdf' veiculo.id %}" 
+         style="display: inline-block; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 0.75rem 1.5rem; border-radius: 10px; text-decoration: none; font-weight: 600; margin: 0.5rem; transition: transform 0.3s ease;"
+         onmouseover="this.style.transform='translateY(-2px)'"
+         onmouseout="this.style.transform='translateY(0)'">
+        📄 PDF
+      </a>
+      <a href="{% url 'drivecar:export_veiculo_excel' veiculo.id %}" 
+         style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.75rem 1.5rem; border-radius: 10px; text-decoration: none; font-weight: 600; margin: 0.5rem; transition: transform 0.3s ease;"
+         onmouseover="this.style.transform='translateY(-2px)'"
+         onmouseout="this.style.transform='translateY(0)'">
+        📊 Excel
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+// Dados para os gráficos
+const gastosData = {{ gastos_mensais|safe }};
+const categoriasData = {{ gastos_categoria|safe }};
+
+// Configuração global do Chart.js
+Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
+Chart.defaults.color = '#64748b';
+
+// Gráfico de Gastos Mensais
+const gastosCtx = document.getElementById('gastosChart').getContext('2d');
+new Chart(gastosCtx, {
+  type: 'bar',
+  data: {
+    labels: gastosData.map(item => item.mes),
+    datasets: [{
+      label: 'Gastos (R$)',
+      data: gastosData.map(item => item.valor),
+      backgroundColor: 'rgba(59, 130, 246, 0.8)',
+      borderColor: '#3b82f6',
+      borderWidth: 2,
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: '#f1f5f9'
+        },
+        ticks: {
+          callback: function(value) {
+            return 'R$ ' + value.toLocaleString('pt-BR', {minimumFractionDigits: 0});
+          }
+        }
+      },
+      x: {
+        grid: {
+          display: false
+        }
+      }
+    }
+  }
+});
+
+// Gráfico de Categorias
+if (categoriasData.length > 0) {
+  const categoriasCtx = document.getElementById('categoriasChart').getContext('2d');
+  
+  // Mapear códigos de categoria para nomes
+  const categoriaNomes = {
+    'FL': 'Fluidos',
+    'FR': 'Freios',
+    'MT': 'Motor',
+    'TR': 'Transmissão',
+    'SU': 'Suspensão',
+    'EL': 'Elétrica',
+    'AC': 'Ar Condicionado',
+    'PN': 'Pneus',
+    'CR': 'Carroceria',
+    'OT': 'Outros'
+  };
+  
+  new Chart(categoriasCtx, {
+    type: 'pie',
+    data: {
+      labels: categoriasData.map(item => categoriaNomes[item.peca__categoria] || item.peca__categoria),
+      datasets: [{
+        data: categoriasData.map(item => item.total),
+        backgroundColor: [
+          '#3b82f6',
+          '#8b5cf6',
+          '#10b981',
+          '#f59e0b',
+          '#ef4444',
+          '#06b6d4',
+          '#84cc16',
+          '#f97316',
+          '#ec4899',
+          '#6366f1'
+        ],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 15,
+            usePointStyle: true,
+            font: {
+              size: 11
+            }
+          }
+        }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

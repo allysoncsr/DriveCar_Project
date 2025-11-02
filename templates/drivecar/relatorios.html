@@ -1,0 +1,259 @@
+{% extends 'drivecar/base.html' %}
+{% block title %}Relatórios{% endblock %}
+
+{% block content %}
+<div class="relatorios-container">
+  <div class="content-header">
+    <h2>📊 Relatórios de Manutenção</h2>
+    <p class="subtitle">Analise os dados dos seus veículos e gere relatórios detalhados</p>
+  </div>
+
+  {% if veiculos %}
+    <div class="veiculos-relatorios">
+      <h3>Selecione um veículo para gerar relatórios:</h3>
+      
+      <div class="veiculos-grid">
+        {% for veiculo in veiculos %}
+          <div class="veiculo-card-relatorio">
+            <div class="veiculo-info">
+              <div class="veiculo-header">
+                <h4>{{ veiculo.modelo }}</h4>
+                <span class="veiculo-ano">{{ veiculo.ano }}</span>
+              </div>
+              
+              <div class="veiculo-details">
+                <span class="placa">{{ veiculo.placa }}</span>
+                <span class="km">{{ veiculo.km_atual|floatformat:0 }} km</span>
+              </div>
+              
+              <div class="veiculo-stats">
+                {% with registros=veiculo.registromanutencao_set.all %}
+                  <div class="stat">
+                    <span class="stat-number">{{ registros.count }}</span>
+                    <span class="stat-label">manutenções</span>
+                  </div>
+                  
+                  {% if registros %}
+                    <div class="stat">
+                      {% with primeiro_registro=registros.first %}
+                        <span class="stat-number">R$ {{ primeiro_registro.preco|default:0|floatformat:0 }}</span>
+                      {% endwith %}
+                      <span class="stat-label">último gasto</span>
+                    </div>
+                  {% endif %}
+                {% endwith %}
+              </div>
+            </div>
+            
+            <div class="veiculo-actions">
+              <a href="{% url 'drivecar:relatorios_veiculo' veiculo.id %}" class="btn-relatorio-completo">
+                <span class="btn-icon">📊</span>
+                Ver Relatórios
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div class="no-veiculos">
+      <div class="no-data-icon">🚗</div>
+      <h3>Nenhum veículo cadastrado</h3>
+      <p>Para gerar relatórios, você precisa primeiro cadastrar um veículo.</p>
+      <a href="{% url 'drivecar:cadastrar_veiculo' %}" class="btn-primary">
+        Cadastrar Primeiro Veículo
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+.relatorios-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.content-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.content-header h2 {
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+  font-size: 2rem;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.veiculos-relatorios h3 {
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.veiculos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.veiculo-card-relatorio {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+  border: 1px solid #e1ecf7;
+}
+
+.veiculo-card-relatorio:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+  border-color: var(--primary-color);
+}
+
+.veiculo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.veiculo-header h4 {
+  margin: 0;
+  color: var(--primary-color);
+  font-size: 1.3rem;
+}
+
+.veiculo-ano {
+  background: var(--accent-light);
+  color: var(--accent);
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.veiculo-details {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.placa {
+  font-family: monospace;
+  background: #f8f9fa;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.veiculo-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-number {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-relatorio-completo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: white;
+  text-decoration: none;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-relatorio-completo:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.3);
+}
+
+.btn-icon {
+  font-size: 1.1rem;
+}
+
+.no-veiculos {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.no-data-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-veiculos h3 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.no-veiculos p {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+.btn-primary {
+  display: inline-block;
+  padding: 0.8rem 2rem;
+  background: var(--accent);
+  color: white;
+  text-decoration: none;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: var(--accent-dark);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .relatorios-container {
+    padding: 1rem;
+  }
+  
+  .veiculos-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .veiculo-stats {
+    justify-content: space-around;
+  }
+}
+</style>
+{% endblock %}

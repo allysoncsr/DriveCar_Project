@@ -1,0 +1,46 @@
+{% extends 'drivecar/base.html' %}
+
+{% block title %}Offline{% endblock %}
+
+{% block content %}
+<div style="
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  text-align: center;
+  padding: 2rem;
+">
+  <div style="
+    background: white;
+    padding: 3rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    max-width: 500px;
+    width: 100%;
+  ">
+    <div style="font-size: 4rem; margin-bottom: 1.5rem;">🚗💨</div>
+    <h1 style="font-size: 2rem; color: #1e293b; margin-bottom: 1rem;">
+      DriveCar está offline
+    </h1>
+    <p style="color: #64748b; font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem;">
+      Não foi possível conectar à internet.<br>
+      Verifique sua conexão e tente novamente.
+    </p>
+    <button onclick="window.location.reload()" style="
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    " onmouseover="this.style.transform='translateY(-2px)'" 
+       onmouseout="this.style.transform='translateY(0)'">
+      Tentar Novamente
+    </button>
+  </div>
+</div>
+{% endblock %}

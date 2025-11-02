@@ -41,3 +41,54 @@ def money_br(value):
         
     except (ValueError, TypeError, AttributeError):
         return "R$ 0,00"
+
+
+@register.filter
+def get_item(dictionary, key):
+    """
+    Filtro para acessar itens de dicionário usando chaves dinâmicas
+    Uso: {{ dict|get_item:key }}
+    """
+    if isinstance(dictionary, dict):
+        return dictionary.get(key)
+    return None
+
+
+@register.filter
+def div(value, divisor):
+    """
+    Filtro para divisão
+    Uso: {{ valor|div:divisor }}
+    """
+    try:
+        if divisor and float(divisor) != 0:
+            return float(value) / float(divisor)
+        return 0
+    except (ValueError, TypeError):
+        return 0
+
+
+@register.filter
+def mul(value, multiplicador):
+    """
+    Filtro para multiplicação
+    Uso: {{ valor|mul:multiplicador }}
+    """
+    try:
+        return float(value) * float(multiplicador)
+    except (ValueError, TypeError):
+        return 0
+
+
+@register.filter
+def divide(value, divisor):
+    """
+    Filtro para divisão (alias para div)
+    Uso: {{ valor|divide:divisor }}
+    """
+    try:
+        if divisor and float(divisor) != 0:
+            return float(value) / float(divisor)
+        return 0
+    except (ValueError, TypeError):
+        return 0

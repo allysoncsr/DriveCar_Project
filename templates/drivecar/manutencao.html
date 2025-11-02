@@ -2,49 +2,393 @@
 {% load form_extras %}
 {% block title %}Manutenção - {{ veiculo }}{% endblock %}
 {% block content %}
-<h2>Manutenção — {{ veiculo }}</h2>
+<div class="manutencao-container">
+  <h2>🔧 Manutenção — {{ veiculo }}</h2>
 
-<!-- Busca Rápida de Peças -->
-<div class="busca-rapida">
-  <div class="busca-container">
-    <input type="text" 
-           id="busca-peca" 
-           placeholder="🔍 Buscar peça..." 
-           class="busca-input"
-           autocomplete="off">
-    <div id="resultados-busca" class="resultados-busca"></div>
-  </div>
-</div>
-
-<div class="categorias">
-  {% for categoria, pecas in categorias.items %}
-    <section class="categoria {% if categoria in categorias_com_alerta %}categoria-com-alerta categoria-alerta-{{ categorias_tipo_alerta|get_item:categoria }}{% endif %}">
-      <button type="button" class="categoria-toggle" data-target="#categoria-{{ forloop.counter }}" aria-expanded="false">
-        <span class="categoria-title">{{ categoria }}</span>
-        <div class="categoria-badges">
-          <span class="categoria-count {% if categoria in categorias_com_alerta %}alerta-{{ categorias_tipo_alerta|get_item:categoria }}{% endif %}">{{ pecas|length }}</span>
+  <!-- Formulário para adicionar nova manutenção -->
+  <div class="form-container">
+    <h3>Registrar Nova Manutenção</h3>
+    <form method="post" class="manutencao-form">
+      {% csrf_token %}
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="peca">Peça/Serviço:</label>
+          <select name="peca" id="peca" required>
+            <option value="">Selecione uma peça...</option>
+            {% for categoria, pecas_lista in categorias.items %}
+              <optgroup label="{{ categoria }}">
+                {% for peca in pecas_lista %}
+                  <option value="{{ peca.id }}">{{ peca.nome }}</option>
+                {% endfor %}
+              </optgroup>
+            {% endfor %}
+          </select>
         </div>
-      </button>
-
-      <div id="categoria-{{ forloop.counter }}" class="categoria-body collapse">
-        <ul>
-          {% for p in pecas %}
-            <li class="peca-item {% if p.id in pecas_com_alerta %}peca-com-alerta{% endif %}">
-              <a href="{% url 'drivecar:registros_peca' veiculo.id p.id %}" class="peca-link" data-target="#registros-{{ p.id }}">
-                {{ p.nome }}
-                {% if p.id in pecas_com_alerta %}
-                  <span class="alerta-indicator">⚠️</span>
-                {% endif %}
-              </a>
-              <div id="registros-{{ p.id }}" class="peca-registros collapse"></div>
-            </li>
-          {% endfor %}
-        </ul>
+        
+        <div class="form-group">
+          <label for="quilometragem">Quilometragem:</label>
+          <input type="number" name="quilometragem" id="quilometragem" value="{{ veiculo.quilometragem }}" required>
+        </div>
       </div>
-    </section>
-  {% endfor %}
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="custo">Custo (R$):</label>
+          <input type="text" name="custo" id="custo" placeholder="0,00" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="data_realizacao">Data:</label>
+          <input type="date" name="data_realizacao" id="data_realizacao" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="troca">
+            <input type="checkbox" name="troca" id="troca"> Foi uma troca/substituição
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label for="garantia_meses">Garantia (meses):</label>
+          <input type="number" name="garantia_meses" id="garantia_meses" min="0" max="120">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="observacoes">Observações:</label>
+        <textarea name="observacoes" id="observacoes" rows="3" placeholder="Detalhes adicionais sobre a manutenção..."></textarea>
+      </div>
+
+      <button type="submit" class="btn-primary">💾 Salvar Registro</button>
+    </form>
+  </div>
+
+  <!-- Lista de registros existentes -->
+  {% if registros %}
+  <div class="registros-container">
+    <div class="registros-header">
+      <h3>Histórico de Manutenções</h3>
+      <span class="registros-count">{{ registros|length }} registro{{ registros|length|pluralize }}</span>
+    </div>
+    <div class="registros-list">
+      {% for registro in registros %}
+      <div class="registro-card-compact">
+        <div class="registro-info">
+          <span class="peca-nome">{{ registro.peca.nome }}</span>
+          <span class="data-info">{{ registro.data|date:"d/m/Y" }}</span>
+          <span class="km-info">{{ registro.km|floatformat:0 }}km</span>
+          <span class="custo-info">R$ {{ registro.preco|floatformat:2 }}</span>
+          <div class="badges">
+            {% if registro.troca %}<span class="badge-troca-compact">Troca</span>{% endif %}
+            {% if registro.garantia_meses %}<span class="badge-garantia-compact">{{ registro.garantia_meses }}m</span>{% endif %}
+          </div>
+          {% if registro.observacoes %}
+          <span class="observacoes-compact" title="{{ registro.observacoes }}">💬</span>
+          {% endif %}
+        </div>
+        <div class="registro-actions-compact">
+          <a href="{% url 'drivecar:excluir_registro' registro.id %}" class="btn-delete-compact" title="Excluir registro">🗑️</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>📋 Nenhuma manutenção registrada ainda.</p>
+    <p>Use o formulário acima para registrar a primeira manutenção deste veículo.</p>
+  </div>
+  {% endif %}
 </div>
 
-<!-- JS de accordion movido para static/js/main.js?v=5 -->
+<style>
+.manutencao-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
 
+.form-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.manutencao-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  width: 100%;
+  font-size: 1.1rem;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+.registros-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.registros-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.registros-header h3 {
+  margin: 0;
+  color: #1f2937;
+}
+
+.registros-count {
+  background: #e5e7eb;
+  color: #6b7280;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Layout Compacto para Registros */
+.registro-card-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  background: #fafafa;
+  transition: all 0.2s ease;
+}
+
+.registro-card-compact:hover {
+  border-color: #3b82f6;
+  background: #f8faff;
+  transform: translateX(2px);
+}
+
+.registro-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.peca-nome {
+  font-weight: 600;
+  color: #1f2937;
+  min-width: 120px;
+  font-size: 0.9rem;
+}
+
+.data-info,
+.km-info,
+.custo-info {
+  color: #6b7280;
+  font-size: 0.85rem;
+  min-width: 80px;
+}
+
+.custo-info {
+  font-weight: 600;
+  color: #059669;
+}
+
+.badges {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.badge-troca-compact,
+.badge-garantia-compact {
+  background: #10b981;
+  color: white;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.badge-garantia-compact {
+  background: #3b82f6;
+}
+
+.observacoes-compact {
+  cursor: help;
+  font-size: 1rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.observacoes-compact:hover {
+  opacity: 1;
+}
+
+.registro-actions-compact {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.btn-delete-compact {
+  padding: 0.3rem;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  opacity: 0.6;
+}
+
+.btn-delete-compact:hover {
+  background-color: #fee2e2;
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .registro-card-compact {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  
+  .registro-info {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .peca-nome {
+    min-width: auto;
+    width: 100%;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .data-info,
+  .km-info,
+  .custo-info {
+    min-width: auto;
+    flex: 1;
+  }
+  
+  .registro-actions-compact {
+    align-self: flex-end;
+  }
+}
+
+.registro-observacoes {
+  background: #f9fafb;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.empty-state {
+  text-align: center;
+  background: white;
+  padding: 3rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  color: #6b7280;
+}
+
+@media (max-width: 768px) {
+  .manutencao-container {
+    padding: 1rem;
+  }
+  
+  .manutencao-form .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .registro-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .registro-details {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+</style>
+
+<script>
+// Auto-definir data de hoje
+document.addEventListener('DOMContentLoaded', function() {
+  const dataInput = document.getElementById('data_realizacao');
+  if (dataInput && !dataInput.value) {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+    dataInput.value = `${ano}-${mes}-${dia}`;
+  }
+});
+
+// Formatação de moeda no campo custo
+document.getElementById('custo').addEventListener('input', function(e) {
+  let value = e.target.value.replace(/\D/g, '');
+  value = (value / 100).toFixed(2) + '';
+  value = value.replace(".", ",");
+  value = value.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
+  value = value.replace(/(\d)(\d{3}),/g, "$1.$2,");
+  e.target.value = value;
+});
+</script>
 {% endblock %}

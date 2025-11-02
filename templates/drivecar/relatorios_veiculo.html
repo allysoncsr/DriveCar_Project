@@ -1,0 +1,699 @@
+{% extends 'drivecar/base.html' %}
+{% load money_filters %}
+{% block title %}Relatórios - {{ veiculo }}{% endblock %}
+
+{% block content %}
+<div class="relatorios-veiculo-container">
+  <!-- Header do Veículo -->
+  <div class="veiculo-header-relatorio">
+    <div class="veiculo-info-header">
+      <h2>🚗 {{ veiculo.modelo }} ({{ veiculo.ano }})</h2>
+      <div class="veiculo-metadata">
+        <span class="placa-display">{{ veiculo.placa }}</span>
+        <span class="km-display">{{ veiculo.km_atual|floatformat:0 }} km</span>
+      </div>
+    </div>
+    <a href="{% url 'drivecar:relatorios' %}" class="btn-voltar">
+      ← Voltar aos Relatórios
+    </a>
+  </div>
+
+  <!-- Estatísticas Rápidas -->
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-info">
+        <div class="stat-number">{{ estatisticas.total_registros }}</div>
+        <div class="stat-label">Manutenções</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <div class="stat-info">
+        <div class="stat-number">R$ {{ estatisticas.total_gastos|floatformat:2 }}</div>
+        <div class="stat-label">Total Gasto</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon">📈</div>
+      <div class="stat-info">
+        <div class="stat-number">R$ {{ estatisticas.gasto_medio|floatformat:2 }}</div>
+        <div class="stat-label">Gasto Médio</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon">🔔</div>
+      <div class="stat-info">
+        <div class="stat-number">{{ alertas|length }}</div>
+        <div class="stat-label">Alertas Ativos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seção de Relatórios -->
+  <div class="relatorios-section">
+    <h3>📊 RELATÓRIOS DESTE VEÍCULO</h3>
+    
+    <div class="relatorios-grid">
+      <!-- Relatório Rápido - Últimos 6 meses -->
+      <div class="relatorio-card quick-report">
+        <div class="relatorio-header">
+          <h4>📈 Últimos 6 meses</h4>
+          <span class="relatorio-badge new">Rápido</span>
+        </div>
+        <div class="relatorio-preview">
+          <div class="preview-stat">
+            <span class="preview-number">{{ estatisticas.registros_recentes }}</span>
+            <span class="preview-label">manutenções</span>
+          </div>
+          {% if estatisticas.ultimo_registro %}
+          <div class="preview-last">
+            Último: {{ estatisticas.ultimo_registro.peca.nome }}
+          </div>
+          {% endif %}
+        </div>
+        <div class="relatorio-actions">
+          <button class="btn-relatorio online" onclick="gerarRelatorioRapido()">
+            <span class="btn-icon">👁️</span>
+            Ver Online
+          </button>
+          <button class="btn-relatorio download" onclick="baixarRelatorioPDF('6meses')">
+            <span class="btn-icon">📄</span>
+            Baixar PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Relatório Financeiro -->
+      <div class="relatorio-card financial-report">
+        <div class="relatorio-header">
+          <h4>💰 Gastos Este Ano</h4>
+          <span class="relatorio-badge popular">Popular</span>
+        </div>
+        <div class="relatorio-preview">
+          <div class="preview-chart">
+            {% if estatisticas.gastos_categoria %}
+              <div class="mini-chart">
+                {% for categoria, valor in estatisticas.gastos_categoria.items %}
+                  <div class="chart-bar" title="{{ categoria }}: R$ {{ valor|floatformat:2 }}">
+                    <div class="bar-fill" style="height: {{ valor|div:estatisticas.total_gastos|mul:100 }}%"></div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="no-data">Sem dados</div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="relatorio-actions">
+          <button class="btn-relatorio online" onclick="gerarRelatorioFinanceiro()">
+            <span class="btn-icon">👁️</span>
+            Ver Online
+          </button>
+          <button class="btn-relatorio download" onclick="baixarRelatorioPDF('financeiro')">
+            <span class="btn-icon">📄</span>
+            Baixar PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Relatório Técnico -->
+      <div class="relatorio-card technical-report">
+        <div class="relatorio-header">
+          <h4>🔧 Relatório Técnico</h4>
+          <span class="relatorio-badge complete">Completo</span>
+        </div>
+        <div class="relatorio-preview">
+          <div class="preview-list">
+            <div class="preview-item">✅ Histórico completo</div>
+            <div class="preview-item">⚙️ Peças substituídas</div>
+            <div class="preview-item">📋 Análise técnica</div>
+            <div class="preview-item">🔔 Alertas ativos</div>
+          </div>
+        </div>
+        <div class="relatorio-actions">
+          <button class="btn-relatorio download primary" onclick="baixarRelatorioPDF('tecnico')">
+            <span class="btn-icon">📄</span>
+            PDF
+          </button>
+          <button class="btn-relatorio download" onclick="baixarRelatorioExcel()">
+            <span class="btn-icon">📊</span>
+            Excel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Relatório Personalizado -->
+  <div class="relatorio-personalizado">
+    <h3>🎛️ Relatório Personalizado</h3>
+    <div class="custom-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>📅 Período:</label>
+          <select id="periodo-select">
+            <option value="1mes">Último mês</option>
+            <option value="3meses">Últimos 3 meses</option>
+            <option value="6meses" selected>Últimos 6 meses</option>
+            <option value="1ano">Último ano</option>
+            <option value="tudo">Todo período</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>📊 Incluir:</label>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="incluir-gastos" checked>
+              <span class="checkmark"></span>
+              Análise financeira
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="incluir-pecas" checked>
+              <span class="checkmark"></span>
+              Peças substituídas
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="incluir-alertas">
+              <span class="checkmark"></span>
+              Alertas e recomendações
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="custom-actions">
+        <button class="btn-custom-relatorio" onclick="gerarRelatorioPersonalizado()">
+          <span class="btn-icon">⚡</span>
+          Gerar Relatório Personalizado
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview dos últimos registros -->
+  {% if registros %}
+  <div class="registros-preview">
+    <h3>📋 Últimas Manutenções</h3>
+    <div class="registros-table-wrapper">
+      <table class="registros-table-preview">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Peça</th>
+            <th>KM</th>
+            <th>Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for registro in registros %}
+            <tr>
+              <td>{{ registro.data|date:"d/m/Y" }}</td>
+              <td>{{ registro.peca.nome }}</td>
+              <td>{{ registro.km|floatformat:0 }} km</td>
+              <td>R$ {{ registro.preco|floatformat:2 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+// Funções para os relatórios
+function gerarRelatorioRapido() {
+  alert('🚧 Em desenvolvimento: Relatório rápido dos últimos 6 meses');
+}
+
+function gerarRelatorioFinanceiro() {
+  alert('🚧 Em desenvolvimento: Relatório financeiro detalhado');
+}
+
+function baixarRelatorioPDF(tipo) {
+  alert(`🚧 Em desenvolvimento: Download PDF - ${tipo}`);
+}
+
+function baixarRelatorioExcel() {
+  alert('🚧 Em desenvolvimento: Export para Excel');
+}
+
+function gerarRelatorioPersonalizado() {
+  const periodo = document.getElementById('periodo-select').value;
+  const incluirGastos = document.getElementById('incluir-gastos').checked;
+  const incluirPecas = document.getElementById('incluir-pecas').checked;
+  const incluirAlertas = document.getElementById('incluir-alertas').checked;
+  
+  alert(`🚧 Em desenvolvimento: Relatório personalizado
+  
+Período: ${periodo}
+Gastos: ${incluirGastos ? 'Sim' : 'Não'}
+Peças: ${incluirPecas ? 'Sim' : 'Não'}
+Alertas: ${incluirAlertas ? 'Sim' : 'Não'}`);
+}
+</script>
+
+<style>
+.relatorios-veiculo-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.veiculo-header-relatorio {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e1ecf7;
+}
+
+.veiculo-info-header h2 {
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+  font-size: 1.8rem;
+}
+
+.veiculo-metadata {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.95rem;
+}
+
+.placa-display {
+  background: #f8f9fa;
+  padding: 0.3rem 0.8rem;
+  border-radius: 8px;
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.km-display {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.btn-voltar {
+  padding: 0.6rem 1.2rem;
+  background: #6c757d;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-voltar:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+.stat-icon {
+  font-size: 2rem;
+  opacity: 0.8;
+}
+
+.stat-number {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.relatorios-section h3 {
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.relatorios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.relatorio-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+  border: 1px solid #e1ecf7;
+}
+
+.relatorio-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+}
+
+.relatorio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.relatorio-header h4 {
+  margin: 0;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+}
+
+.relatorio-badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.relatorio-badge.new {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.relatorio-badge.popular {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.relatorio-badge.complete {
+  background: #d4edda;
+  color: #155724;
+}
+
+.relatorio-preview {
+  margin-bottom: 1.5rem;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-stat {
+  text-align: center;
+}
+
+.preview-number {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.preview-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.preview-last {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
+.mini-chart {
+  display: flex;
+  gap: 4px;
+  height: 60px;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.chart-bar {
+  width: 20px;
+  height: 100%;
+  background: #f8f9fa;
+  border-radius: 2px;
+  position: relative;
+}
+
+.bar-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(to top, var(--primary-color), var(--accent));
+  border-radius: 2px;
+  min-height: 4px;
+}
+
+.preview-list {
+  font-size: 0.9rem;
+}
+
+.preview-item {
+  margin-bottom: 0.3rem;
+  color: var(--text-muted);
+}
+
+.relatorio-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-relatorio {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.btn-relatorio.online {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.btn-relatorio.online:hover {
+  background: #bbdefb;
+}
+
+.btn-relatorio.download {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.btn-relatorio.download:hover {
+  background: #e1bee7;
+}
+
+.btn-relatorio.primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-relatorio.primary:hover {
+  background: var(--primary-dark);
+}
+
+.relatorio-personalizado {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  margin-bottom: 2rem;
+}
+
+.relatorio-personalizado h3 {
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.form-group select {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #e1ecf7;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.checkbox-label input[type="checkbox"] {
+  display: none;
+}
+
+.checkmark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e1ecf7;
+  border-radius: 4px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.checkbox-label input:checked + .checkmark {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.checkbox-label input:checked + .checkmark::after {
+  content: '✓';
+  position: absolute;
+  color: white;
+  font-size: 12px;
+  top: -2px;
+  left: 2px;
+}
+
+.btn-custom-relatorio {
+  padding: 0.8rem 2rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-custom-relatorio:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.3);
+}
+
+.registros-preview {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.registros-preview h3 {
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+}
+
+.registros-table-wrapper {
+  overflow-x: auto;
+}
+
+.registros-table-preview {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.registros-table-preview th {
+  background: #f8f9fa;
+  padding: 0.8rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--primary-color);
+  border-bottom: 2px solid #e1ecf7;
+}
+
+.registros-table-preview td {
+  padding: 0.8rem;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.registros-table-preview tr:hover {
+  background: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+  .relatorios-veiculo-container {
+    padding: 1rem;
+  }
+  
+  .veiculo-header-relatorio {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .stats-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .relatorios-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .relatorio-actions {
+    flex-direction: column;
+  }
+}
+</style>
+{% endblock %}

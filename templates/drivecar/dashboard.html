@@ -1,0 +1,400 @@
+{% extends 'drivecar/base.html' %}
+{% load money_filters %}
+
+{% block title %}Dashboard - Analytics{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* Dashboard Styles */
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.dashboard-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-subtitle {
+  color: #64748b;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+/* Stats Cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border: 1px solid rgba(226,232,240,0.5);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(59,130,246,0.15);
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.stat-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: #64748b;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Charts Grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.chart-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border: 1px solid rgba(226,232,240,0.5);
+}
+
+.chart-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.chart-container {
+  position: relative;
+  height: 400px;
+}
+
+/* Tables */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.data-table th {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #4b5563;
+}
+
+.data-table tr:hover {
+  background-color: #f8fafc;
+}
+
+.vehicle-link {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.vehicle-link:hover {
+  color: #1d4ed8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1rem;
+  }
+  
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-title {
+    font-size: 2rem;
+  }
+  
+  .chart-container {
+    height: 300px;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <h1 class="dashboard-title">📊 Analytics Dashboard</h1>
+    <p class="dashboard-subtitle">Visão completa dos seus veículos e gastos</p>
+    
+    <!-- Export Buttons -->
+    <div style="margin-top: 1.5rem;">
+      <a href="{% url 'drivecar:export_pdf' %}" 
+         style="display: inline-block; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 0.75rem 1.5rem; border-radius: 10px; text-decoration: none; font-weight: 600; margin: 0.25rem; transition: transform 0.3s ease;"
+         onmouseover="this.style.transform='translateY(-2px)'"
+         onmouseout="this.style.transform='translateY(0)'">
+        📄 Exportar PDF
+      </a>
+      <a href="{% url 'drivecar:export_excel' %}" 
+         style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.75rem 1.5rem; border-radius: 10px; text-decoration: none; font-weight: 600; margin: 0.25rem; transition: transform 0.3s ease;"
+         onmouseover="this.style.transform='translateY(-2px)'"
+         onmouseout="this.style.transform='translateY(0)'">
+        📊 Exportar Excel
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon">🚗</span>
+      <div class="stat-value">{{ total_veiculos }}</div>
+      <div class="stat-label">Veículos</div>
+    </div>
+    
+    <div class="stat-card">
+      <span class="stat-icon">💰</span>
+      <div class="stat-value">R$ {{ gasto_total|money_format }}</div>
+      <div class="stat-label">Total Gasto</div>
+    </div>
+    
+    <div class="stat-card">
+      <span class="stat-icon">🔧</span>
+      <div class="stat-value">{{ total_registros }}</div>
+      <div class="stat-label">Manutenções</div>
+    </div>
+    
+    <div class="stat-card">
+      <span class="stat-icon">📈</span>
+      <div class="stat-value">{{ km_total|floatformat:0 }}</div>
+      <div class="stat-label">Total KM</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <!-- Gastos Mensais -->
+    <div class="chart-card">
+      <h3 class="chart-title">Gastos Mensais (Últimos 12 meses)</h3>
+      <div class="chart-container">
+        <canvas id="gastosChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Top Peças -->
+    <div class="chart-card">
+      <h3 class="chart-title">Top 5 Peças Mais Utilizadas</h3>
+      <div class="chart-container">
+        <canvas id="pecasChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Veículos Table -->
+  {% if veiculos %}
+  <div class="chart-card">
+    <h3 class="chart-title">Seus Veículos</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Veículo</th>
+          <th>Ano</th>
+          <th>KM Atual</th>
+          <th>Combustível</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for veiculo in veiculos %}
+        <tr>
+          <td>
+            <strong>{{ veiculo.marca }} {{ veiculo.modelo }}</strong><br>
+            <small style="color: #64748b;">{{ veiculo.cor }}</small>
+          </td>
+          <td>{{ veiculo.ano }}</td>
+          <td>{{ veiculo.quilometragem|floatformat:0 }} km</td>
+          <td>{{ veiculo.combustivel }}</td>
+          <td>
+            <a href="{% url 'drivecar:dashboard_veiculo' veiculo.id %}" class="vehicle-link">
+              Ver Dashboard →
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+// Dados para os gráficos
+const gastosData = {{ gastos_mensais|safe }};
+const mesesLabels = {{ meses|safe }};
+const tiposPeca = {{ tipos_peca|default:"[]"|safe }};
+
+// Configuração do Chart.js
+Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
+Chart.defaults.color = '#64748b';
+
+// Gráfico de Gastos Mensais
+const gastosCtx = document.getElementById('gastosChart').getContext('2d');
+new Chart(gastosCtx, {
+  type: 'line',
+  data: {
+    labels: mesesLabels,
+    datasets: [{
+      label: 'Gastos (R$)',
+      data: gastosData,
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      borderWidth: 3,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#3b82f6',
+      pointBorderColor: '#ffffff',
+      pointBorderWidth: 2,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: '#f1f5f9'
+        },
+        ticks: {
+          callback: function(value) {
+            return 'R$ ' + value.toLocaleString('pt-BR', {minimumFractionDigits: 0});
+          }
+        }
+      },
+      x: {
+        grid: {
+          display: false
+        }
+      }
+    }
+  }
+});
+
+// Gráfico de Top Peças
+if (tiposPeca.length > 0) {
+  const pecasCtx = document.getElementById('pecasChart').getContext('2d');
+  new Chart(pecasCtx, {
+    type: 'doughnut',
+    data: {
+      labels: tiposPeca.map(item => item.peca__nome || 'Não definida'),
+      datasets: [{
+        data: tiposPeca.map(item => item.total || 0),
+        backgroundColor: [
+          '#3b82f6',
+          '#8b5cf6',
+          '#10b981',
+          '#f59e0b',
+          '#ef4444'
+        ],
+        borderWidth: 0,
+        cutout: '60%'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 20,
+            usePointStyle: true,
+            font: {
+              size: 12
+            }
+          }
+        }
+      }
+    }
+  });
+} else {
+  // Se não há dados, mostrar mensagem
+  const pecasCtx = document.getElementById('pecasChart').getContext('2d');
+  pecasCtx.font = '16px Inter';
+  pecasCtx.fillStyle = '#64748b';
+  pecasCtx.textAlign = 'center';
+  pecasCtx.fillText('Nenhum dado disponível', pecasCtx.canvas.width/2, pecasCtx.canvas.height/2);
+}
+</script>
+{% endblock %}

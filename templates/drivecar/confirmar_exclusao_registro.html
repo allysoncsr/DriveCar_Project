@@ -1,0 +1,63 @@
+{% extends 'drivecar/base.html' %}
+
+{% block title %}Confirmar Exclusão - DriveCar{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-exclamation-triangle text-warning"></i> Confirmar Exclusão</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <h5><i class="fas fa-exclamation-circle"></i> Atenção!</h5>
+                        <p class="mb-0">Você tem certeza que deseja excluir este registro de manutenção?</p>
+                    </div>
+                    
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h6><i class="fas fa-info-circle text-info"></i> Detalhes do Registro</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Veículo:</strong> {{ registro.veiculo.marca }} {{ registro.veiculo.modelo }}</p>
+                                    <p><strong>Peça:</strong> {{ registro.peca.nome }}</p>
+                                    <p><strong>Tipo:</strong> 
+                                        {% if registro.troca %}
+                                            <span class="badge bg-danger">Troca</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">Manutenção</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Data:</strong> {{ registro.data|date:"d/m/Y" }}</p>
+                                    <p><strong>Quilometragem:</strong> {{ registro.km|floatformat:0 }} km</p>
+                                    <p><strong>Custo:</strong> R$ {{ registro.preco|floatformat:2 }}</p>
+                                </div>
+                            </div>
+                            {% if registro.observacoes %}
+                                <p><strong>Observações:</strong> {{ registro.observacoes }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <form method="post" style="display: inline-block; margin-right: 10px;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Sim, Excluir Registro
+                            </button>
+                        </form>
+                        
+                        <a href="{% url 'drivecar:manutencao' registro.veiculo.id %}" class="btn btn-secondary" style="display: inline-block;">
+                            <i class="fas fa-arrow-left"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

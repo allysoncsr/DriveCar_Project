@@ -5,16 +5,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token }}">
+  
+  <meta name="description" content="Gerencie a manutenção dos seus veículos">
+  <link rel="icon" type="image/png" href="{% static 'images/Logo_drivecar.png' %}">
+  
   <title>DriveCar - {% block title %}{% endblock %}</title>
+  
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- adicionar CSS do Tailwind depois -->
+  
+  <!-- CSS -->
   <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=9">
+  
   <!-- HTMX -->
   <script src="https://unpkg.com/htmx.org@1.10.0"></script>
-  <!-- Alpine.js leve -->
+  
+  <!-- Alpine.js -->
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
@@ -30,7 +38,9 @@
         </div>
       </a>
       <nav class="main-nav">
-        <a class="nav-item" href="{% url 'drivecar:cadastrar_veiculo' %}">Cadastrar veículo</a>
+        <div class="nav-buttons">
+          <a class="nav-item" href="{% url 'drivecar:cadastrar_veiculo' %}">Cadastrar veículo</a>
+        </div>
         <div class="user-info">
           <span class="welcome-text">Olá, {{ user.first_name|default:user.username }}!</span>
           <a class="nav-item nav-logout" href="{% url 'drivecar:logout' %}">Sair</a>
@@ -88,5 +98,9 @@
       }
     }
   </script>
+
+  <!-- Scripts básicos da aplicação -->
+
+  {% block extra_head %}{% endblock %}
 </body>
 </html>
