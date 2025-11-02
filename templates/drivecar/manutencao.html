@@ -7,16 +7,48 @@
 
   <!-- Formulário para adicionar nova manutenção -->
   <div class="form-container">
-    <h3>Registrar Nova Manutenção</h3>
+    <h3>📝 Registrar Nova Manutenção</h3>
     <form method="post" class="manutencao-form">
       {% csrf_token %}
       
-      <div class="form-row">
+      <!-- Seletor de Tipo -->
+      <div class="tipo-selector">
+        <label class="tipo-label">
+          <input type="radio" name="tipo_item" value="servico" checked>
+          <span class="tipo-button">🔧 Serviço</span>
+        </label>
+        <label class="tipo-label">
+          <input type="radio" name="tipo_item" value="peca">
+          <span class="tipo-button">⚙️ Peça</span>
+        </label>
+      </div>
+
+      <!-- Área de Serviços -->
+      <div class="item-area" id="area-servico">
+        <h4>🔧 Selecionar Serviço</h4>
         <div class="form-group">
-          <label for="peca">Peça/Serviço:</label>
-          <select name="peca" id="peca" required>
+          <label for="servico">Serviço:</label>
+          <select name="servico" id="servico">
+            <option value="">Selecione um serviço...</option>
+            {% for categoria, servicos_lista in categorias_servicos.items %}
+              <optgroup label="{{ categoria }}">
+                {% for servico in servicos_lista %}
+                  <option value="{{ servico.id }}" title="{{ servico.descricao }}">{{ servico.nome }}</option>
+                {% endfor %}
+              </optgroup>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Área de Peças -->
+      <div class="item-area" id="area-peca" style="display: none;">
+        <h4>⚙️ Selecionar Peça</h4>
+        <div class="form-group">
+          <label for="peca">Peça:</label>
+          <select name="peca" id="peca">
             <option value="">Selecione uma peça...</option>
-            {% for categoria, pecas_lista in categorias.items %}
+            {% for categoria, pecas_lista in categorias_pecas.items %}
               <optgroup label="{{ categoria }}">
                 {% for peca in pecas_lista %}
                   <option value="{{ peca.id }}">{{ peca.nome }}</option>
@@ -25,10 +57,13 @@
             {% endfor %}
           </select>
         </div>
-        
+      </div>
+      
+      <!-- Campos Comuns -->
+      <div class="form-row">
         <div class="form-group">
           <label for="quilometragem">Quilometragem:</label>
-          <input type="number" name="quilometragem" id="quilometragem" value="{{ veiculo.quilometragem }}" required>
+          <input type="number" name="quilometragem" id="quilometragem" value="{{ veiculo.km_atual }}" required>
         </div>
       </div>
 
@@ -67,21 +102,97 @@
   </div>
 
   <!-- Lista de registros existentes -->
-  {% if registros %}
   <div class="registros-container">
     <div class="registros-header">
       <h3>Histórico de Manutenções</h3>
-      <span class="registros-count">{{ registros|length }} registro{{ registros|length|pluralize }}</span>
+      <span class="registros-count">
+        {% if registros and registros.paginator.count > 0 %}
+          {{ registros.paginator.count }} registro{{ registros.paginator.count|pluralize }}
+          ({{ registros.start_index }}-{{ registros.end_index }})
+        {% else %}
+          0 registros
+        {% endif %}
+      </span>
     </div>
+
+    <!-- Filtros -->
+    <div class="filtros-container">
+      <form method="get" class="filtros-form">
+        <div class="filtros-row">
+          <div class="filtro-grupo">
+            <label>Tipo:</label>
+            <select name="tipo" id="filtro-tipo">
+              <option value="">Todos</option>
+              <option value="servico" {% if filtro_tipo == 'servico' %}selected{% endif %}>🔧 Serviços</option>
+              <option value="peca" {% if filtro_tipo == 'peca' %}selected{% endif %}>⚙️ Peças</option>
+            </select>
+          </div>
+          
+          <div class="filtro-grupo">
+            <label>Troca:</label>
+            <select name="troca" id="filtro-troca">
+              <option value="">Todos</option>
+              <option value="sim" {% if filtro_troca == 'sim' %}selected{% endif %}>Sim</option>
+              <option value="nao" {% if filtro_troca == 'nao' %}selected{% endif %}>Não</option>
+            </select>
+          </div>
+          
+          <div class="filtro-grupo">
+            <label>Categoria:</label>
+            <select name="categoria" id="filtro-categoria">
+              <option value="">Todas</option>
+              {% for categoria_valor, categoria_nome in categorias_filtro %}
+                <option value="{{ categoria_valor }}" {% if filtro_categoria == categoria_valor %}selected{% endif %}>
+                  {{ categoria_nome }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="filtro-grupo">
+            <label>Período:</label>
+            <select name="periodo" id="filtro-periodo">
+              <option value="">Todos</option>
+              <option value="ultimo_mes" {% if filtro_periodo == 'ultimo_mes' %}selected{% endif %}>Último mês</option>
+              <option value="ultimos_3_meses" {% if filtro_periodo == 'ultimos_3_meses' %}selected{% endif %}>3 meses</option>
+              <option value="ultimos_6_meses" {% if filtro_periodo == 'ultimos_6_meses' %}selected{% endif %}>6 meses</option>
+              <option value="ultimo_ano" {% if filtro_periodo == 'ultimo_ano' %}selected{% endif %}>1 ano</option>
+              <option value="personalizado" {% if filtro_periodo == 'personalizado' %}selected{% endif %}>� Personalizar</option>
+            </select>
+          </div>
+
+          <!-- Datas personalizadas inline -->
+          <div class="filtros-data-inline" id="filtros-data-inline" style="display: {% if filtro_periodo == 'personalizado' %}flex{% else %}none{% endif %};">
+            <input type="date" name="data_inicio" id="data-inicio" value="{{ filtro_data_inicio|default:'' }}" placeholder="De" title="Data início">
+            <input type="date" name="data_fim" id="data-fim" value="{{ filtro_data_fim|default:'' }}" placeholder="Até" title="Data fim">
+          </div>
+          
+          <div class="filtro-grupo filtro-acoes">
+            <button type="submit" class="btn-filtrar">
+              <span>🔍</span> Filtrar
+            </button>
+            <a href="{% url 'drivecar:manutencao' veiculo.id %}" class="btn-limpar">
+              <span>✨</span> Limpar
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    {% if registros and registros|length > 0 %}
     <div class="registros-list">
       {% for registro in registros %}
       <div class="registro-card-compact">
         <div class="registro-info">
-          <span class="peca-nome">{{ registro.peca.nome }}</span>
+          <span class="item-tipo">
+            {% if registro.tipo == 'servico' %}🔧{% else %}⚙️{% endif %}
+          </span>
+          <span class="peca-nome">{{ registro.get_item_nome }}</span>
           <span class="data-info">{{ registro.data|date:"d/m/Y" }}</span>
           <span class="km-info">{{ registro.km|floatformat:0 }}km</span>
           <span class="custo-info">R$ {{ registro.preco|floatformat:2 }}</span>
           <div class="badges">
+            {% if registro.tipo == 'servico' %}<span class="badge-servico-compact">Serviço</span>{% endif %}
             {% if registro.troca %}<span class="badge-troca-compact">Troca</span>{% endif %}
             {% if registro.garantia_meses %}<span class="badge-garantia-compact">{{ registro.garantia_meses }}m</span>{% endif %}
           </div>
@@ -95,20 +206,352 @@
       </div>
       {% endfor %}
     </div>
+    {% else %}
+    <div class="empty-results">
+      <div class="empty-results-content">
+        <div class="empty-icon">🔍</div>
+        <h4>Nenhum registro encontrado</h4>
+        <p>Não foram encontradas manutenções com os filtros selecionados.</p>
+        <div class="empty-suggestions">
+          <p><strong>Tente:</strong></p>
+          <ul>
+            <li>Alterar o período selecionado</li>
+            <li>Escolher uma categoria diferente</li>
+            <li>Remover alguns filtros</li>
+            <li><a href="{% url 'drivecar:manutencao' veiculo.id %}" class="btn-clear-filters">✨ Limpar todos os filtros</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Paginação -->
+    {% if registros.has_other_pages %}
+    <div class="paginacao-container">
+      <div class="paginacao">
+        {% if registros.has_previous %}
+          <a href="?{% if filtro_tipo %}tipo={{ filtro_tipo }}&{% endif %}{% if filtro_troca %}troca={{ filtro_troca }}&{% endif %}{% if filtro_categoria %}categoria={{ filtro_categoria }}&{% endif %}{% if filtro_periodo %}periodo={{ filtro_periodo }}&{% endif %}{% if filtro_data_inicio %}data_inicio={{ filtro_data_inicio }}&{% endif %}{% if filtro_data_fim %}data_fim={{ filtro_data_fim }}&{% endif %}page=1" class="pagina-link" title="Primeira página">⏮️</a>
+          <a href="?{% if filtro_tipo %}tipo={{ filtro_tipo }}&{% endif %}{% if filtro_troca %}troca={{ filtro_troca }}&{% endif %}{% if filtro_categoria %}categoria={{ filtro_categoria }}&{% endif %}{% if filtro_periodo %}periodo={{ filtro_periodo }}&{% endif %}{% if filtro_data_inicio %}data_inicio={{ filtro_data_inicio }}&{% endif %}{% if filtro_data_fim %}data_fim={{ filtro_data_fim }}&{% endif %}page={{ registros.previous_page_number }}" class="pagina-link" title="Página anterior">◀️</a>
+        {% endif %}
+
+        <span class="pagina-info">
+          Página {{ registros.number }} de {{ registros.paginator.num_pages }}
+        </span>
+
+        {% if registros.has_next %}
+          <a href="?{% if filtro_tipo %}tipo={{ filtro_tipo }}&{% endif %}{% if filtro_troca %}troca={{ filtro_troca }}&{% endif %}{% if filtro_categoria %}categoria={{ filtro_categoria }}&{% endif %}{% if filtro_periodo %}periodo={{ filtro_periodo }}&{% endif %}{% if filtro_data_inicio %}data_inicio={{ filtro_data_inicio }}&{% endif %}{% if filtro_data_fim %}data_fim={{ filtro_data_fim }}&{% endif %}page={{ registros.next_page_number }}" class="pagina-link" title="Próxima página">▶️</a>
+          <a href="?{% if filtro_tipo %}tipo={{ filtro_tipo }}&{% endif %}{% if filtro_troca %}troca={{ filtro_troca }}&{% endif %}{% if filtro_categoria %}categoria={{ filtro_categoria }}&{% endif %}{% if filtro_periodo %}periodo={{ filtro_periodo }}&{% endif %}{% if filtro_data_inicio %}data_inicio={{ filtro_data_inicio }}&{% endif %}{% if filtro_data_fim %}data_fim={{ filtro_data_fim }}&{% endif %}page={{ registros.paginator.num_pages }}" class="pagina-link" title="Última página">⏭️</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
   </div>
-  {% else %}
-  <div class="empty-state">
-    <p>📋 Nenhuma manutenção registrada ainda.</p>
-    <p>Use o formulário acima para registrar a primeira manutenção deste veículo.</p>
-  </div>
-  {% endif %}
 </div>
 
 <style>
 .manutencao-container {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+}
+
+/* Seletor de Tipo (Serviço/Peça) */
+.tipo-selector {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.tipo-label {
+  flex: 1;
+  cursor: pointer;
+}
+
+.tipo-label input[type="radio"] {
+  display: none;
+}
+
+.tipo-button {
+  display: block;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  background: #e5e7eb;
+  color: #6b7280;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.tipo-label input[type="radio"]:checked + .tipo-button {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Áreas de Seleção */
+.item-area {
+  background: #f8faff;
+  border: 2px solid #e0e7ff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.item-area h4 {
+  margin: 0 0 1rem 0;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+/* Ícones nos registros */
+.item-tipo {
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+}
+
+/* Badge para serviços */
+.badge-servico-compact {
+  background: #f59e0b;
+  color: white;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* Filtros */
+.filtros-container {
+  background: linear-gradient(135deg, #f8faff 0%, #f0f7ff 100%);
+  border: 1px solid #e0e7ff;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.filtros-form {
+  margin: 0;
+}
+
+.filtros-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.filtros-data-inline {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Animações */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+    width: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    width: auto;
+  }
+}
+
+.filtro-grupo {
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  flex: 1;
+}
+
+.filtro-acoes {
+  flex-direction: row !important;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-left: auto;
+  min-width: auto;
+  flex: 0 0 auto;
+  padding-left: 1rem;
+}
+
+.filtro-grupo label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+}
+
+.filtro-grupo select,
+.filtro-grupo input[type="date"] {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: white;
+  transition: all 0.2s ease;
+  min-height: 36px;
+}
+
+.filtro-grupo select:focus,
+.filtro-grupo input[type="date"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.filtros-data-inline input[type="date"] {
+  width: 140px;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.filtro-grupo input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  color: #6b7280;
+}
+}
+  background: white;
+}
+
+.btn-filtrar,
+.btn-limpar {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 0;
+  border: none;
+  white-space: nowrap;
+  min-height: 36px;
+}
+
+.btn-filtrar {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-filtrar:hover {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.btn-limpar {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btn-limpar:hover {
+  background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
+  color: #475569;
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: #94a3b8;
+}
+
+/* Paginação */
+.paginacao-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.paginacao {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagina-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: #f3f4f6;
+  color: #374151;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  transition: all 0.2s ease;
+}
+
+.pagina-link:hover {
+  background: #3b82f6;
+  color: white;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.pagina-info {
+  padding: 0 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .filtros-container {
+    padding: 0.75rem;
+  }
+  
+  .filtros-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .filtro-grupo {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .filtros-data-inline {
+    margin-top: 0.5rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .filtros-data-inline input[type="date"] {
+    width: 100%;
+  }
+  
+  .filtro-acoes {
+    margin-left: 0 !important;
+    padding-left: 0;
+    margin-top: 0.75rem;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .btn-filtrar,
+  .btn-limpar {
+    flex: 1;
+    justify-content: center;
+    max-width: 120px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
 }
 
 .form-container {
@@ -346,6 +789,74 @@
   color: #6b7280;
 }
 
+/* Mensagem de resultados vazios */
+.empty-results {
+  text-align: center;
+  background: linear-gradient(135deg, #f8faff 0%, #f0f7ff 100%);
+  padding: 3rem;
+  border-radius: 12px;
+  margin-top: 1rem;
+  border: 1px solid #e0e7ff;
+}
+
+.empty-results-content {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.empty-results h4 {
+  color: #374151;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+}
+
+.empty-results p {
+  color: #6b7280;
+  margin: 0 0 1.5rem 0;
+}
+
+.empty-suggestions {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.empty-suggestions p {
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+  color: #374151;
+}
+
+.empty-suggestions ul {
+  margin: 0;
+  padding-left: 1rem;
+  list-style-type: disc;
+}
+
+.empty-suggestions li {
+  margin-bottom: 0.5rem;
+  color: #6b7280;
+}
+
+.btn-clear-filters {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.btn-clear-filters:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
 @media (max-width: 768px) {
   .manutencao-container {
     padding: 1rem;
@@ -369,8 +880,79 @@
 </style>
 
 <script>
-// Auto-definir data de hoje
 document.addEventListener('DOMContentLoaded', function() {
+  // Controle do filtro de período personalizado
+  const filtroPeriodo = document.getElementById('filtro-periodo');
+  const filtrosDataInline = document.getElementById('filtros-data-inline');
+
+  if (filtroPeriodo && filtrosDataInline) {
+    filtroPeriodo.addEventListener('change', function() {
+      if (this.value === 'personalizado') {
+        filtrosDataInline.style.display = 'flex';
+        filtrosDataInline.style.animation = 'slideIn 0.3s ease';
+      } else {
+        filtrosDataInline.style.display = 'none';
+        // Limpar campos de data quando não é personalizado
+        document.getElementById('data-inicio').value = '';
+        document.getElementById('data-fim').value = '';
+      }
+    });
+  }
+
+  // Scroll para histórico se veio de filtro
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('tipo') || urlParams.has('troca') || urlParams.has('categoria') || urlParams.has('periodo') || urlParams.has('data_inicio') || urlParams.has('data_fim') || urlParams.has('page')) {
+    const historicoSection = document.querySelector('.registros-container');
+    if (historicoSection) {
+      setTimeout(() => {
+        historicoSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }
+
+  // Smooth scroll para filtros
+  const filtrarBtn = document.querySelector('.btn-filtrar');
+  if (filtrarBtn && filtrarBtn.type === 'submit') {
+    filtrarBtn.closest('form').addEventListener('submit', function() {
+      // Salvar posição do histórico no sessionStorage
+      sessionStorage.setItem('scrollToHistorico', 'true');
+    });
+  }
+
+  // Alternar entre Serviço e Peça
+  const tipoRadios = document.querySelectorAll('input[name="tipo_item"]');
+  const areaServico = document.getElementById('area-servico');
+  const areaPeca = document.getElementById('area-peca');
+  const selectServico = document.getElementById('servico');
+  const selectPeca = document.getElementById('peca');
+  
+  function toggleAreas() {
+    const tipoSelecionado = document.querySelector('input[name="tipo_item"]:checked').value;
+    
+    if (tipoSelecionado === 'servico') {
+      areaServico.style.display = 'block';
+      areaPeca.style.display = 'none';
+      selectServico.required = true;
+      selectPeca.required = false;
+      selectPeca.value = '';
+    } else {
+      areaServico.style.display = 'none';
+      areaPeca.style.display = 'block';
+      selectPeca.required = true;
+      selectServico.required = false;
+      selectServico.value = '';
+    }
+  }
+  
+  // Inicializar
+  toggleAreas();
+  
+  // Event listeners
+  tipoRadios.forEach(radio => {
+    radio.addEventListener('change', toggleAreas);
+  });
+
+  // Auto-definir data de hoje
   const dataInput = document.getElementById('data_realizacao');
   if (dataInput && !dataInput.value) {
     const hoje = new Date();

@@ -56,28 +56,43 @@ def index(request):
 
 @login_required
 def cadastrar_veiculo(request):
+    from .models import Marca, Modelo, Versao
+    
     if request.method == 'POST':
-        marca = request.POST['marca']
-        modelo = request.POST['modelo']
+        marca_id = request.POST['marca']
+        modelo_id = request.POST['modelo']
+        versao_id = request.POST.get('versao')
         ano = int(request.POST['ano'])
-        cor = request.POST['cor']
+        placa = request.POST.get('placa', '')
         combustivel = request.POST['combustivel']
-        quilometragem = int(request.POST['quilometragem'])
+        km_atual = int(request.POST['km_atual']) if request.POST['km_atual'] else 0
+        
+        # Obter instâncias dos objetos
+        marca = get_object_or_404(Marca, id=marca_id)
+        modelo = get_object_or_404(Modelo, id=modelo_id)
+        versao = get_object_or_404(Versao, id=versao_id) if versao_id else None
         
         veiculo = Veiculo.objects.create(
             usuario=request.user,
             marca=marca,
             modelo=modelo,
+            versao=versao,
             ano=ano,
-            cor=cor,
+            placa=placa,
             combustivel=combustivel,
-            km_atual=quilometragem
+            km_atual=km_atual
         )
         
-        messages.success(request, f'Veículo {marca} {modelo} cadastrado com sucesso!')
+        messages.success(request, f'Veículo {marca.nome} {modelo.nome} cadastrado com sucesso!')
         return redirect('drivecar:index')
     
-    return render(request, 'drivecar/cadastrar_veiculo.html')
+    # Buscar marcas ativas para o template
+    marcas = Marca.objects.filter(ativo=True).order_by('nome')
+    
+    context = {
+        'marcas': marcas,
+    }
+    return render(request, 'drivecar/cadastrar_veiculo.html', context)
 
 @login_required
 def editar_veiculo(request, veiculo_id):
@@ -110,20 +125,90 @@ def excluir_veiculo(request, veiculo_id):
 
 @login_required
 def manutencao(request, veiculo_id):
+    from .models import Servico
+    from django.core.paginator import Paginator
+    from django.db import models
+    
     veiculo = get_object_or_404(Veiculo, id=veiculo_id, usuario=request.user)
     pecas = Peca.objects.all()
-    registros = RegistroManutencao.objects.filter(veiculo=veiculo).order_by('-data')
+    servicos = Servico.objects.all()
+    
+    # Filtros
+    filtro_tipo = request.GET.get('tipo', '')
+    filtro_troca = request.GET.get('troca', '')
+    filtro_categoria = request.GET.get('categoria', '')
+    filtro_periodo = request.GET.get('periodo', '')
+    filtro_data_inicio = request.GET.get('data_inicio', '')
+    filtro_data_fim = request.GET.get('data_fim', '')
+    
+    # Query base
+    registros_qs = RegistroManutencao.objects.filter(veiculo=veiculo)
+    
+    # Aplicar filtros
+    if filtro_tipo:
+        registros_qs = registros_qs.filter(tipo=filtro_tipo)
+    
+    if filtro_troca == 'sim':
+        registros_qs = registros_qs.filter(troca=True)
+    elif filtro_troca == 'nao':
+        registros_qs = registros_qs.filter(troca=False)
+    
+    if filtro_categoria:
+        registros_qs = registros_qs.filter(
+            models.Q(peca__categoria=filtro_categoria) | 
+            models.Q(servico__categoria=filtro_categoria)
+        )
+    
+    # Filtros de data/período
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    
+    if filtro_periodo:
+        hoje = timezone.now().date()
+        
+        if filtro_periodo == 'ultimo_mes':
+            data_inicio = hoje - timedelta(days=30)
+            registros_qs = registros_qs.filter(data__gte=data_inicio)
+        elif filtro_periodo == 'ultimos_3_meses':
+            data_inicio = hoje - timedelta(days=90)
+            registros_qs = registros_qs.filter(data__gte=data_inicio)
+        elif filtro_periodo == 'ultimos_6_meses':
+            data_inicio = hoje - timedelta(days=180)
+            registros_qs = registros_qs.filter(data__gte=data_inicio)
+        elif filtro_periodo == 'ultimo_ano':
+            data_inicio = hoje - timedelta(days=365)
+            registros_qs = registros_qs.filter(data__gte=data_inicio)
+        elif filtro_periodo == 'personalizado':
+            if filtro_data_inicio:
+                registros_qs = registros_qs.filter(data__gte=filtro_data_inicio)
+            if filtro_data_fim:
+                registros_qs = registros_qs.filter(data__lte=filtro_data_fim)
+    
+    registros_qs = registros_qs.order_by('-data', '-km')
+    
+    # Paginação
+    paginator = Paginator(registros_qs, 5)  # 5 registros por página
+    page_number = request.GET.get('page', 1)
+    registros = paginator.get_page(page_number)
     
     # Organizar peças por categoria
-    categorias = {}
+    categorias_pecas = {}
     for peca in pecas:
         categoria_nome = peca.get_categoria_display()
-        if categoria_nome not in categorias:
-            categorias[categoria_nome] = []
-        categorias[categoria_nome].append(peca)
+        if categoria_nome not in categorias_pecas:
+            categorias_pecas[categoria_nome] = []
+        categorias_pecas[categoria_nome].append(peca)
+    
+    # Organizar serviços por categoria
+    categorias_servicos = {}
+    for servico in servicos:
+        categoria_nome = servico.get_categoria_display()
+        if categoria_nome not in categorias_servicos:
+            categorias_servicos[categoria_nome] = []
+        categorias_servicos[categoria_nome].append(servico)
     
     if request.method == 'POST':
-        peca_id = request.POST['peca']
+        tipo_item = request.POST['tipo_item']  # 'peca' ou 'servico'
         quilometragem = int(request.POST['quilometragem'])
         custo = float(request.POST['custo'].replace(',', '.'))
         observacoes = request.POST.get('observacoes', '')
@@ -131,36 +216,71 @@ def manutencao(request, veiculo_id):
         troca = request.POST.get('troca') == 'on'
         garantia_meses = request.POST.get('garantia_meses')
         
-        # Obter peça
-        peca = get_object_or_404(Peca, id=peca_id)
-        
-        registro = RegistroManutencao.objects.create(
-            veiculo=veiculo,
-            peca=peca,
-            km=quilometragem,
-            preco=custo,
-            observacoes=observacoes,
-            data=datetime.strptime(data_realizacao, '%Y-%m-%d').date(),
-            troca=troca,
-            garantia_meses=int(garantia_meses) if garantia_meses else None,
-        )
+        # Criar registro baseado no tipo
+        if tipo_item == 'peca':
+            peca_id = request.POST['peca']
+            peca = get_object_or_404(Peca, id=peca_id)
+            
+            registro = RegistroManutencao.objects.create(
+                veiculo=veiculo,
+                tipo='peca',
+                peca=peca,
+                km=quilometragem,
+                preco=custo,
+                observacoes=observacoes,
+                data=datetime.strptime(data_realizacao, '%Y-%m-%d').date(),
+                troca=troca,
+                garantia_meses=int(garantia_meses) if garantia_meses else None,
+            )
+            messages.success(request, f'Peça "{peca.nome}" registrada com sucesso!')
+            
+        elif tipo_item == 'servico':
+            servico_id = request.POST['servico']
+            servico = get_object_or_404(Servico, id=servico_id)
+            
+            registro = RegistroManutencao.objects.create(
+                veiculo=veiculo,
+                tipo='servico',
+                servico=servico,
+                km=quilometragem,
+                preco=custo,
+                observacoes=observacoes,
+                data=datetime.strptime(data_realizacao, '%Y-%m-%d').date(),
+                troca=troca,
+                garantia_meses=int(garantia_meses) if garantia_meses else None,
+            )
+            messages.success(request, f'Serviço "{servico.nome}" registrado com sucesso!')
         
         # Atualizar quilometragem do veículo se necessário
         if quilometragem > veiculo.km_atual:
             veiculo.km_atual = quilometragem
             veiculo.save()
         
-        messages.success(request, 'Registro de manutenção adicionado com sucesso!')
         return redirect('drivecar:manutencao', veiculo_id=veiculo.id)
+    
+    # Obter todas as categorias únicas para o filtro
+    categorias_filtro = set()
+    for peca in pecas:
+        categorias_filtro.add((peca.categoria, peca.get_categoria_display()))
+    for servico in servicos:
+        categorias_filtro.add((servico.categoria, servico.get_categoria_display()))
+    categorias_filtro = sorted(list(categorias_filtro), key=lambda x: x[1])
     
     context = {
         'veiculo': veiculo,
         'pecas': pecas,
+        'servicos': servicos,
         'registros': registros,
-        'categorias': categorias,
-        'categorias_com_alerta': [],  # Sistema de alertas desabilitado
-        'categorias_tipo_alerta': {},  # Sistema de alertas desabilitado
-        'pecas_com_alerta': [],  # Sistema de alertas desabilitado
+        'categorias_pecas': categorias_pecas,
+        'categorias_servicos': categorias_servicos,
+        'categorias_filtro': categorias_filtro,
+        'filtro_tipo': filtro_tipo,
+        'filtro_troca': filtro_troca,
+        'filtro_categoria': filtro_categoria,
+        'filtro_periodo': filtro_periodo,
+        'filtro_data_inicio': filtro_data_inicio,
+        'filtro_data_fim': filtro_data_fim,
+        'total_registros': paginator.count if 'paginator' in locals() else 0,
     }
     return render(request, 'drivecar/manutencao.html', context)
 
@@ -177,3 +297,48 @@ def excluir_registro(request, registro_id):
         return redirect('drivecar:manutencao', veiculo_id=veiculo_id)
     
     return render(request, 'drivecar/confirmar_exclusao_registro.html', {'registro': registro})
+
+# APIs para select cascateado
+@login_required
+def api_modelos(request, marca_id):
+    """API para buscar modelos de uma marca"""
+    from django.http import JsonResponse
+    from .models import Modelo
+    
+    try:
+        modelos = Modelo.objects.filter(marca_id=marca_id, ativo=True).order_by('nome')
+        data = {
+            'modelos': [
+                {
+                    'id': modelo.id,
+                    'nome': modelo.nome
+                }
+                for modelo in modelos
+            ]
+        }
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+@login_required  
+def api_versoes(request, modelo_id):
+    """API para buscar versões de um modelo"""
+    from django.http import JsonResponse
+    from .models import Versao
+    
+    try:
+        versoes = Versao.objects.filter(modelo_id=modelo_id, ativo=True).order_by('nome')
+        data = {
+            'versoes': [
+                {
+                    'id': versao.id,
+                    'nome': versao.nome,
+                    'motor': versao.motor or '',
+                    'combustivel': versao.combustivel or ''
+                }
+                for versao in versoes
+            ]
+        }
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)

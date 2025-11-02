@@ -20,4 +20,8 @@ urlpatterns = [
     # Manutenção
     path("veiculo/<int:veiculo_id>/manutencao/", views.manutencao, name="manutencao"),
     path("registro/<int:registro_id>/excluir/", views.excluir_registro, name="excluir_registro"),
+    
+    # APIs para select cascateado
+    path("api/modelos/<int:marca_id>/", views.api_modelos, name="api_modelos"),
+    path("api/versoes/<int:modelo_id>/", views.api_versoes, name="api_versoes"),
 ]

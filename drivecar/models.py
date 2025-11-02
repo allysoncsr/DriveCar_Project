@@ -340,6 +340,31 @@ class Veiculo(models.Model):
         verbose_name_plural = _("Veículos")
 
 
+class Servico(models.Model):
+    CATEGORIAS = [
+        ("motor", "Motor e Sistema de Injeção"),
+        ("transmissao", "Transmissão e Embreagem"),
+        ("suspensao", "Suspensão e Direção"),
+        ("freios", "Sistema de Freios"),
+        ("eletrica", "Sistema Elétrico e Eletrônico"),
+        ("ar_condicionado", "Ar-condicionado e Climatização"),
+        ("carroceria", "Funilaria e Pintura"),
+        ("pneus_rodas", "Pneus e Rodas"),
+        ("manutencao_geral", "Manutenção Geral"),
+    ]
+    categoria = models.CharField(_("categoria"), max_length=30, choices=CATEGORIAS)
+    nome = models.CharField(_("nome do serviço"), max_length=150)
+    descricao = models.TextField(_("descrição"), blank=True)
+
+    def __str__(self):
+        return f"{self.nome} - {self.get_categoria_display()}"
+
+    class Meta:
+        verbose_name = _("Serviço")
+        verbose_name_plural = _("Serviços")
+        ordering = ["categoria", "nome"]
+
+
 class Peca(models.Model):
     CATEGORIAS = [
         ("motor", "Motor"),
@@ -364,19 +389,45 @@ class Peca(models.Model):
 
 
 class RegistroManutencao(models.Model):
+    TIPO_CHOICES = [
+        ("peca", "Peça"),
+        ("servico", "Serviço"),
+    ]
+    
     veiculo = models.ForeignKey(Veiculo, on_delete=models.CASCADE, verbose_name=_("veículo"))
-    peca = models.ForeignKey(Peca, on_delete=models.CASCADE, verbose_name=_("peça"))
+    tipo = models.CharField(_("tipo"), max_length=10, choices=TIPO_CHOICES, default="peca")
+    
+    # Relacionamentos opcionais (um OU outro será preenchido)
+    peca = models.ForeignKey(Peca, on_delete=models.CASCADE, verbose_name=_("peça"), null=True, blank=True)
+    servico = models.ForeignKey(Servico, on_delete=models.CASCADE, verbose_name=_("serviço"), null=True, blank=True)
+    
     data = models.DateField(_("data"))
     km = models.PositiveIntegerField(_("quilometragem"))
     preco = models.DecimalField(_("preço (R$)"), max_digits=10, decimal_places=2)
-    troca = models.BooleanField(_("troca (sim/não)"), default=False)
+    troca = models.BooleanField(_("troca/substituição"), default=False, help_text=_("Marque se foi uma troca ou substituição"))
     garantia_meses = models.PositiveIntegerField(_("tempo de garantia (meses)"), null=True, blank=True)
     observacoes = models.TextField(_("observações"), blank=True)
     # Campo remanescente do sistema de alertas removido - mantido para compatibilidade
     alerta_ativo = models.BooleanField(_("alerta ativo"), default=False)
 
+    def get_item_nome(self):
+        """Retorna o nome da peça ou serviço"""
+        if self.tipo == "peca" and self.peca:
+            return self.peca.nome
+        elif self.tipo == "servico" and self.servico:
+            return self.servico.nome
+        return "Item não definido"
+
+    def get_item_categoria(self):
+        """Retorna a categoria da peça ou serviço"""
+        if self.tipo == "peca" and self.peca:
+            return self.peca.get_categoria_display()
+        elif self.tipo == "servico" and self.servico:
+            return self.servico.get_categoria_display()
+        return ""
+
     def __str__(self):
-        return f"{self.veiculo} - {self.peca.nome} @ {self.km} km"
+        return f"{self.veiculo} - {self.get_item_nome()} @ {self.km} km"
 
     class Meta:
         verbose_name = _("Registro de Manutenção")
